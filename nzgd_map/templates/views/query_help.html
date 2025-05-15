@@ -8,7 +8,13 @@
 
     <div class="content-section">
         <h2>Available Query Fields</h2>
-        <p>{{ col_names_to_display }}</p>
+        <div class="field-list">
+            <ul>
+                {% for field in col_names_to_display.split(", ") %}
+                <li><code>{{ field }}</code></li>
+                {% endfor %}
+            </ul>
+        </div>
 
         <h2>Example Queries</h2>
         <ul>
