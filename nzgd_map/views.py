@@ -5,15 +5,16 @@ Each view is a function that returns an HTML template to render in the browser.
 
 import os
 import sqlite3
+import pathlib
 from collections import OrderedDict
 from io import StringIO
 from pathlib import Path
 
 import flask
 import numpy as np
-import pandas as pd
+import pandas as pd  # Ensure pandas is imported
 import plotly.express as px
-import plotly.graph_objects as go
+import plotly.graph_objects as go  # Add import for plotly.graph_objects
 from flask import after_this_request
 from plotly.subplots import make_subplots
 
@@ -95,8 +96,13 @@ def index():
     #########################################################################################
 
     # Calculate the center of the map for visualization
-    centre_lat = database_df["latitude"].mean()
-    centre_lon = database_df["longitude"].mean()
+    if not database_df.empty:
+        centre_lat = database_df["latitude"].mean()
+        centre_lon = database_df["longitude"].mean()
+    else:
+        # Default center for NZ if database_df is empty
+        centre_lat = -41.0
+        centre_lon = 174.0
 
     ## Make map marker sizes proportional to the absolute value of the Vs30 log residual.
     ## For records where the Vs30 log residual is unavailable, use the median of absolute value of the Vs30 log residuals.
@@ -139,26 +145,96 @@ def index():
     database_df["deepest_depth (m)"] = database_df["deepest_depth"]
 
     # Create an interactive scatter map using Plotly
-    map = px.scatter_map(
-        database_df,
-        lat="latitude",  # Column specifying latitude
-        lon="longitude",  # Column specifying longitude
-        color=colour_by,  # Column specifying marker color
-        hover_name=database_df["record_name"],
-        zoom=5,
-        size="size",  # Marker size
-        center={"lat": centre_lat, "lon": centre_lon},  # Map center
-        hover_data=OrderedDict(
-            [  # Used to order the items in hover data (but lat and long are always first)
-                ("deepest_depth (m)", ":.2f"),
-                ("Vs30 (m/s)", True),
-                ("Vs30_log_resid", True),
-                ("size", False),
-                ("vs30", False),
-                ("vs30_log_residual", False),
-            ]
-        ),
+    # For debugging GeoNet, comment out the database points plotting:
+    # map = px.scatter_map(
+    #     database_df,
+    #     lat="latitude",  # Column specifying latitude
+    #     lon="longitude",  # Column specifying longitude
+    #     color=colour_by,  # Column specifying marker color
+    #     hover_name=database_df["record_name"],
+    #     zoom=5,
+    #     size="size",  # Marker size
+    #     center={"lat": centre_lat, "lon": centre_lon},  # Map center
+    #     hover_data=OrderedDict(
+    #         [  # Used to order the items in hover data (but lat and long are always first)
+    #             ("deepest_depth (m)", ":.2f"),
+    #             ("Vs30 (m/s)", True),
+    #             ("Vs30_log_resid", True),
+    #             ("size", False),
+    #             ("vs30", False),
+    #             ("vs30_log_residual", False),
+    #         ]
+    #     ),
+    # )
+
+    # Initialize a base map figure for GeoNet points
+    map = go.Figure()  # Assign to 'map' as it's used by subsequent add_trace
+    map.update_layout(
+        mapbox_style="open-street-map",
+        mapbox_zoom=5,  # Consistent with original zoom
+        mapbox_center_lat=centre_lat,
+        mapbox_center_lon=centre_lon,
+        margin={"r": 0, "t": 0, "l": 0, "b": 0},
     )
+
+    # Load GeoNet station data
+    geonet_file_path = instance_path / "geoNet_stats+2023-06-28.ll"
+    try:
+        # Skip the first line if it's a comment, and handle potential comments within the file
+        geonet_df = pd.read_csv(
+            geonet_file_path,
+            delim_whitespace=True,
+            header=None,
+            names=["longitude", "latitude", "code_name"],
+            comment="/",  # Treat lines starting with / as comments
+        )
+        # Ensure longitude and latitude are numeric, coercing errors to NaN
+        geonet_df["longitude"] = pd.to_numeric(geonet_df["longitude"], errors="coerce")
+        geonet_df["latitude"] = pd.to_numeric(geonet_df["latitude"], errors="coerce")
+        # Drop rows with NaN in longitude or latitude, which might result from parsing issues or comments
+        geonet_df.dropna(subset=["longitude", "latitude"], inplace=True)
+
+    except FileNotFoundError:
+        geonet_df = pd.DataFrame(columns=["longitude", "latitude", "code_name"])
+        flask.current_app.logger.warning(
+            f"GeoNet station file not found: {geonet_file_path}"
+        )
+    except pd.errors.EmptyDataError:  # Handles empty file or file with only comments
+        geonet_df = pd.DataFrame(columns=["longitude", "latitude", "code_name"])
+        flask.current_app.logger.warning(
+            f"GeoNet station file is empty or could not be parsed: {geonet_file_path}"
+        )
+
+    # Add GeoNet stations to the map if data is available
+    if not geonet_df.empty:
+        map.add_trace(
+            go.Scattermapbox(
+                lat=geonet_df["latitude"],
+                lon=geonet_df["longitude"],
+                mode="markers",
+                marker=go.scattermapbox.Marker(
+                    size=10,  # Fixed size for GeoNet stations
+                    color="deeppink",  # Distinct color
+                    opacity=0.7,
+                ),
+                text=geonet_df["code_name"],  # Text to display on hover
+                hoverinfo="text",  # Show only the text on hover
+                name="GeoNet Stations",  # Name for the legend
+            )
+        )
+        # Ensure the legend is shown if GeoNet stations are added
+        map.update_layout(showlegend=True)
+    else:
+        # If there are no GeoNet stations, ensure the legend visibility depends on other factors (e.g., if database_df has multiple colors)
+        # This part might need adjustment based on how the legend is handled for database_df points
+        if (
+            len(database_df[colour_by].unique()) <= 1
+        ):  # Check if database points have a single color
+            map.update_layout(
+                showlegend=False
+            )  # Hide legend if only one type of point from db and no GeoNet points
+        else:
+            map.update_layout(showlegend=True)
 
     # Create an interactive histogram using Plotly
     hist_plot = px.histogram(database_df, x=hist_by)
