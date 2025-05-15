@@ -119,3 +119,75 @@ form {
     color: #007bff;
     font-weight: bold;
 }
+
+/* GeoNet upload section styles */
+.geonet-upload-section {
+    background-color: #f5f5f5;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+    border-left: 5px solid #28a745;
+}
+
+.geonet-upload-section h4 {
+    margin-top: 0;
+    color: #28a745;
+}
+
+.geonet-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.upload-form {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 0;
+}
+
+.file-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.file-submit-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.file-submit-btn:hover {
+    background-color: #218838;
+}
+
+.clear-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.clear-btn:hover {
+    background-color: #c82333;
+}
+
+.file-status {
+    margin-left: 10px;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.clear-form {
+    margin: 0;
+}

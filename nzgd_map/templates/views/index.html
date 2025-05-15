@@ -18,6 +18,32 @@
     <br>
     <p><a href="{{ url_for('views.query_help') }}" target="_blank" class="help-link">Need help with queries? Click here
             for examples and syntax</a></p>
+
+    <div class="geonet-upload-section">
+        <h4>GeoNet Station Data</h4>
+        <p>You can upload a custom GeoNet station file to replace the default one:</p>
+
+        <div class="geonet-actions">
+            <form action="{{ url_for('views.upload_geonet') }}" method="post" enctype="multipart/form-data"
+                class="upload-form">
+                <div class="file-input-wrapper">
+                    <input type="file" name="geonet_file" id="geonet_file" accept=".txt,.ll,.csv" />
+                    <button type="submit" class="file-submit-btn">Upload GeoNet Station File</button>
+                </div>
+                {% if session.get('user_geonet_file') %}
+                <span class="file-status">✓ Custom file loaded</span>
+                {% else %}
+                <span class="file-status">Using default file</span>
+                {% endif %}
+            </form>
+
+            {% if session.get('user_geonet_file') %}
+            <form action="{{ url_for('views.clear_geonet') }}" method="post" class="clear-form">
+                <button type="submit" class="clear-btn">Reset to Default File</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
     <br>
 
 </section>

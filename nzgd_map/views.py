@@ -5,6 +5,8 @@ Each view is a function that returns an HTML template to render in the browser.
 
 import os
 import sqlite3
+import tempfile
+import uuid
 from collections import OrderedDict
 from io import StringIO
 from pathlib import Path
@@ -15,11 +17,30 @@ import pandas as pd  # Ensure pandas is imported
 import plotly.express as px
 import plotly.graph_objects as go  # Add import for plotly.graph_objects
 from plotly.subplots import make_subplots
+from werkzeug.utils import secure_filename
 
 from . import constants, query_sqlite_db
 
 # Create a Flask Blueprint for the views
 bp = flask.Blueprint("views", __name__)
+
+# Directory to store temporary uploaded geonet files
+UPLOAD_FOLDER = tempfile.gettempdir()
+ALLOWED_EXTENSIONS = {"txt", "ll", "csv"}
+
+
+def allowed_file(filename):
+    """Check if the file has an allowed extension"""
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def get_user_geonet_file_path():
+    """Get the path to the user's uploaded GeoNet file if it exists in the session"""
+    if "user_geonet_file" in flask.session:
+        file_path = Path(UPLOAD_FOLDER) / flask.session["user_geonet_file"]
+        if file_path.exists():
+            return file_path
+    return None
 
 
 @bp.route("/", methods=["GET"])
@@ -220,7 +241,14 @@ def index():
         )
 
     # Load GeoNet station data
-    geonet_file_path = instance_path / "geoNet_stats+2023-06-28.ll"
+    # First check for user-uploaded file, otherwise use default
+    user_geonet_file = get_user_geonet_file_path()
+    geonet_file_path = (
+        user_geonet_file
+        if user_geonet_file
+        else instance_path / "geoNet_stats+2023-06-28.ll"
+    )
+
     try:
         # Skip the first line if it's a comment, and handle potential comments within the file
         geonet_df = pd.read_csv(
@@ -804,21 +832,8 @@ def query_help():
     ]
     col_names_to_display_str = ", ".join(col_names_to_display)
 
-    # Connect to the database to retrieve location data
-    with sqlite3.connect(instance_path / constants.database_file_name) as conn:
-        # Get lists of region, district, city, and suburb names
-        region_names = query_sqlite_db.get_region_names(conn)
-        district_names = query_sqlite_db.get_district_names(conn)
-        city_names = query_sqlite_db.get_city_names(conn)
-        suburb_names = query_sqlite_db.get_suburb_names(conn)
-
     return flask.render_template(
-        "views/query_help.html",
-        col_names_to_display=col_names_to_display_str,
-        region_names=region_names,
-        district_names=district_names,
-        city_names=city_names,
-        suburb_names=suburb_names,
+        "views/query_help.html", col_names_to_display=col_names_to_display_str
     )
 
 
@@ -872,3 +887,44 @@ def validate():
     ) as e:
         return flask.render_template("error.html", error=e)
     return ""
+
+
+@bp.route("/upload_geonet", methods=["POST"])
+def upload_geonet():
+    """Handle GeoNet station file upload."""
+    if "geonet_file" not in flask.request.files:
+        return flask.redirect(flask.request.referrer)
+
+    file = flask.request.files["geonet_file"]
+
+    # If the user does not select a file, the browser submits an empty file
+    if file.filename == "":
+        return flask.redirect(flask.request.referrer)
+
+    if file and allowed_file(file.filename):
+        # Generate a unique filename to prevent conflicts
+        filename = secure_filename(f"{uuid.uuid4()}_{file.filename}")
+        file_path = Path(UPLOAD_FOLDER) / filename
+
+        # Save the file
+        file.save(file_path)
+
+        # Store the filename in the session
+        flask.session["user_geonet_file"] = filename
+
+    return flask.redirect(flask.request.referrer)
+
+
+@bp.route("/clear_geonet", methods=["POST"])
+def clear_geonet():
+    """Remove the user's uploaded GeoNet file."""
+    if "user_geonet_file" in flask.session:
+        # Delete the file if it exists
+        file_path = Path(UPLOAD_FOLDER) / flask.session["user_geonet_file"]
+        if file_path.exists():
+            os.remove(file_path)
+
+        # Remove from session
+        del flask.session["user_geonet_file"]
+
+    return flask.redirect(flask.request.referrer)
