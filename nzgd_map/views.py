@@ -106,12 +106,8 @@ def index():
 
     ## Make map marker sizes proportional to the absolute value of the Vs30 log residual.
     ## For records where the Vs30 log residual is unavailable, use the median of absolute value of the Vs30 log residuals.
-    database_df["size"] = (
-        database_df["vs30_log_residual"]
-        .abs()
-        .fillna(database_df["vs30_log_residual"].abs().median().round(1))
-    )
-    marker_size_description_text = r"Marker size indicates the magnitude of the Vs30 log residual, given by \(\mathrm{|(\log(SPT_{Vs30}) - \log(Foster2019_{Vs30})|}\)"
+    ## This calculation is moved inside the 'if not database_df.empty:' block below.
+    marker_size_description_text = r"Marker size indicates the magnitude of the Vs30 log residual, given by \(\mathrm{|(\log(SPT_{Vs30}) - \log(Foster2019_{Vs30})|}\). A minimum size is applied for visibility."
 
     ## Make new columns of string values to display instead of the float values for Vs30 and log residual
     ## so that an explanation can be shown when the vs30 value or the log residual
@@ -144,38 +140,79 @@ def index():
     )
     database_df["deepest_depth (m)"] = database_df["deepest_depth"]
 
-    # Create an interactive scatter map using Plotly
-    # For debugging GeoNet, comment out the database points plotting:
-    # map = px.scatter_map(
-    #     database_df,
-    #     lat="latitude",  # Column specifying latitude
-    #     lon="longitude",  # Column specifying longitude
-    #     color=colour_by,  # Column specifying marker color
-    #     hover_name=database_df["record_name"],
-    #     zoom=5,
-    #     size="size",  # Marker size
-    #     center={"lat": centre_lat, "lon": centre_lon},  # Map center
-    #     hover_data=OrderedDict(
-    #         [  # Used to order the items in hover data (but lat and long are always first)
-    #             ("deepest_depth (m)", ":.2f"),
-    #             ("Vs30 (m/s)", True),
-    #             ("Vs30_log_resid", True),
-    #             ("size", False),
-    #             ("vs30", False),
-    #             ("vs30_log_residual", False),
-    #         ]
-    #     ),
-    # )
+    # Initialize a go.Figure for the map
+    map_fig = go.Figure()
 
-    # Initialize a base map figure for GeoNet points
-    map = go.Figure()  # Assign to 'map' as it's used by subsequent add_trace
-    map.update_layout(
-        mapbox_style="open-street-map",
-        mapbox_zoom=5,  # Consistent with original zoom
-        mapbox_center_lat=centre_lat,
-        mapbox_center_lon=centre_lon,
-        margin={"r": 0, "t": 0, "l": 0, "b": 0},
-    )
+    # Add database points if available
+    if not database_df.empty:
+        # Calculate marker sizes for database_df
+        abs_residuals = database_df["vs30_log_residual"].abs()
+        median_abs_residual = abs_residuals.median()
+
+        default_positive_size_for_fill = (
+            5.0  # Default size for filling NaNs if median is not suitable
+        )
+        fill_value_for_nan = default_positive_size_for_fill
+
+        if pd.notna(median_abs_residual):
+            if median_abs_residual > 0:
+                fill_value_for_nan = median_abs_residual.round(
+                    1
+                )  # Use rounded positive median
+            # If median_abs_residual is 0, fill_value_for_nan remains default_positive_size_for_fill
+
+        # Create the 'size' column, fill NaNs, and ensure a minimum positive size
+        database_df["size"] = abs_residuals.fillna(fill_value_for_nan)
+        database_df["size"] = np.maximum(
+            database_df["size"], 2.0
+        )  # Enforce minimum size of 2.0
+
+        # Prepare customdata for hover info
+        hover_cols_for_customdata = [
+            "deepest_depth (m)",
+            "Vs30 (m/s)",
+            "Vs30_log_resid",
+        ]
+        custom_data_for_db = []
+        if all(col in database_df.columns for col in hover_cols_for_customdata):
+            custom_data_for_db = database_df[hover_cols_for_customdata]
+        else:
+            # Create placeholder customdata if columns are missing to prevent errors
+            num_rows = len(database_df)
+            custom_data_for_db = pd.DataFrame(
+                {
+                    "deepest_depth (m)": ["N/A"] * num_rows,
+                    "Vs30 (m/s)": ["N/A"] * num_rows,
+                    "Vs30_log_resid": ["N/A"] * num_rows,
+                }
+            )
+
+        map_fig.add_trace(
+            go.Scattermapbox(
+                lat=database_df["latitude"],
+                lon=database_df["longitude"],
+                mode="markers",
+                marker=go.scattermapbox.Marker(
+                    size=database_df[
+                        "size"
+                    ],  # Use the robustly calculated 'size' column
+                    color=database_df[colour_by] if colour_by in database_df else None,
+                    colorscale="Viridis",
+                    showscale=True if colour_by in database_df else False,
+                    colorbar_title_text=colour_by if colour_by in database_df else "",
+                ),
+                text=database_df.get("record_name", ""),  # Use .get for record_name
+                customdata=custom_data_for_db,
+                hovertemplate=(
+                    "<b>%{text}</b><br><br>"
+                    + "Deepest Depth (m): %{customdata[0]}<br>"
+                    + "Vs30 (m/s): %{customdata[1]}<br>"
+                    + "Vs30 Log Resid: %{customdata[2]}"
+                    + "<extra></extra>"
+                ),
+                name="NZGD Records",
+            )
+        )
 
     # Load GeoNet station data
     geonet_file_path = instance_path / "geoNet_stats+2023-06-28.ll"
@@ -207,37 +244,42 @@ def index():
 
     # Add GeoNet stations to the map if data is available
     if not geonet_df.empty:
-        map.add_trace(
+        map_fig.add_trace(
             go.Scattermapbox(
                 lat=geonet_df["latitude"],
                 lon=geonet_df["longitude"],
                 mode="markers",
                 marker=go.scattermapbox.Marker(
-                    size=10,  # Fixed size for GeoNet stations
-                    color="deeppink",  # Distinct color
+                    size=10,
+                    color="deeppink",
                     opacity=0.7,
                 ),
-                text=geonet_df["code_name"],  # Text to display on hover
-                hoverinfo="text",  # Show only the text on hover
-                name="GeoNet Stations",  # Name for the legend
+                text=geonet_df["code_name"],
+                hoverinfo="text",
+                name="GeoNet Stations",
+                showlegend=True,
             )
         )
-        # Ensure the legend is shown if GeoNet stations are added
-        map.update_layout(showlegend=True)
-    else:
-        # If there are no GeoNet stations, ensure the legend visibility depends on other factors (e.g., if database_df has multiple colors)
-        # This part might need adjustment based on how the legend is handled for database_df points
-        if (
-            len(database_df[colour_by].unique()) <= 1
-        ):  # Check if database points have a single color
-            map.update_layout(
-                showlegend=False
-            )  # Hide legend if only one type of point from db and no GeoNet points
-        else:
-            map.update_layout(showlegend=True)
+
+    # Update map layout
+    map_fig.update_layout(
+        mapbox_style="open-street-map",
+        mapbox_zoom=4,
+        mapbox_center_lat=centre_lat,
+        mapbox_center_lon=centre_lon,
+        margin={"r": 0, "t": 0, "l": 0, "b": 0},
+        showlegend=True,
+        legend_title_text="Legend",
+    )
 
     # Create an interactive histogram using Plotly
-    hist_plot = px.histogram(database_df, x=hist_by)
+    if not database_df.empty and hist_by in database_df.columns:
+        hist_plot = px.histogram(database_df, x=hist_by)
+    else:
+        hist_plot = go.Figure().update_layout(
+            title_text=f"No data for {hist_by}", xaxis_title=hist_by
+        )
+
     hist_description_text = (
         f"Histogram of {hist_by}, showing {len(database_df)} records"
     )
@@ -281,7 +323,7 @@ def index():
     return flask.render_template(
         "views/index.html",
         date_of_last_nzgd_retrieval=date_of_last_nzgd_retrieval,
-        map=map.to_html(
+        map=map_fig.to_html(  # Use map_fig here
             full_html=False,  # Embed only the necessary map HTML
             include_plotlyjs=False,  # Exclude Plotly.js library (assume it's loaded separately)
             default_height="85vh",  # Set the map height
