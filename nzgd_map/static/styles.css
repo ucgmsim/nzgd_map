@@ -2,7 +2,54 @@ form {
     display: flex;
     flex-direction: column;
 }
-#query-form > * {
+
+#query-form>* {
     width: 100%;
     margin: 0 0 10px 10px;
+}
+
+/* Style for query help link - matching the almond.css button style */
+.help-link {
+    display: inline-block;
+    background-color: #007bff;
+    color: white !important;
+    /* Force white text color in all states */
+    padding: 8px 15px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: normal;
+    transition: background-color 0.3s;
+}
+
+.help-link:hover {
+    background-color: #0069d9;
+    text-decoration: none;
+    color: white !important;
+    /* Ensure white text color on hover */
+}
+
+/* Query help page styles */
+.content-section {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    border-left: 5px solid #007bff;
+}
+
+.content-section code {
+    background-color: #eee;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+.back-link {
+    margin: 20px 0;
+}
+
+.back-link a {
+    text-decoration: none;
+    color: #007bff;
+    font-weight: bold;
 }

@@ -765,6 +765,50 @@ def download_spt_soil_types(filename):
     return response
 
 
+@bp.route("/query_help", methods=["GET"])
+def query_help():
+    """
+    Display a help page for constructing queries.
+    """
+    # Access the instance folder for application-specific data
+    instance_path = Path(flask.current_app.instance_path)
+
+    # Get column names to display on the query help page
+    col_names_to_display = [
+        "record_name",
+        "nzgd_id",
+        "cpt_id",
+        "vs30",
+        "vs30_stddev",
+        "type_prefix",
+        "original_reference",
+        "investigation_date",
+        "published_date",
+        "latitude",
+        "longitude",
+        "model_vs30_foster_2019",
+        "model_vs30_stddev_foster_2019",
+        "model_gwl_westerhoff_2019",
+        "cpt_tip_net_area_ratio",
+        "measured_gwl",
+        "deepest_depth",
+        "shallowest_depth",
+        "region",
+        "district",
+        "suburb",
+        "city",
+        "vs30_log_residual",
+        "gwl_residual",
+        "spt_efficiency",
+        "spt_borehole_diameter",
+    ]
+    col_names_to_display_str = ", ".join(col_names_to_display)
+
+    return flask.render_template(
+        "views/query_help.html", col_names_to_display=col_names_to_display_str
+    )
+
+
 @bp.route("/validate", methods=["GET"])
 def validate():
     """
