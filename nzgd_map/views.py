@@ -804,8 +804,21 @@ def query_help():
     ]
     col_names_to_display_str = ", ".join(col_names_to_display)
 
+    # Connect to the database to retrieve location data
+    with sqlite3.connect(instance_path / constants.database_file_name) as conn:
+        # Get lists of region, district, city, and suburb names
+        region_names = query_sqlite_db.get_region_names(conn)
+        district_names = query_sqlite_db.get_district_names(conn)
+        city_names = query_sqlite_db.get_city_names(conn)
+        suburb_names = query_sqlite_db.get_suburb_names(conn)
+
     return flask.render_template(
-        "views/query_help.html", col_names_to_display=col_names_to_display_str
+        "views/query_help.html",
+        col_names_to_display=col_names_to_display_str,
+        region_names=region_names,
+        district_names=district_names,
+        city_names=city_names,
+        suburb_names=suburb_names,
     )
 
 

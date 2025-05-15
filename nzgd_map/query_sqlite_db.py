@@ -427,6 +427,82 @@ def spt_soil_types_for_one_nzgd(
     return spt_soil_types_df
 
 
+def get_region_names(conn: sqlite3.Connection) -> list:
+    """
+    Get all region names from the region table.
+
+    Parameters
+    ----------
+    conn : sqlite3.Connection
+        The SQLite database connection.
+
+    Returns
+    -------
+    list
+        A list of region names.
+    """
+    query = "SELECT name FROM region ORDER BY name;"
+    regions_df = pd.read_sql(query, conn)
+    return regions_df["name"].tolist()
+
+
+def get_district_names(conn: sqlite3.Connection) -> list:
+    """
+    Get all district names from the district table.
+
+    Parameters
+    ----------
+    conn : sqlite3.Connection
+        The SQLite database connection.
+
+    Returns
+    -------
+    list
+        A list of district names.
+    """
+    query = "SELECT name FROM district ORDER BY name;"
+    districts_df = pd.read_sql(query, conn)
+    return districts_df["name"].tolist()
+
+
+def get_city_names(conn: sqlite3.Connection) -> list:
+    """
+    Get all city names from the city table.
+
+    Parameters
+    ----------
+    conn : sqlite3.Connection
+        The SQLite database connection.
+
+    Returns
+    -------
+    list
+        A list of city names.
+    """
+    query = "SELECT name FROM city ORDER BY name;"
+    cities_df = pd.read_sql(query, conn)
+    return cities_df["name"].tolist()
+
+
+def get_suburb_names(conn: sqlite3.Connection) -> list:
+    """
+    Get all suburb names from the suburb table.
+
+    Parameters
+    ----------
+    conn : sqlite3.Connection
+        The SQLite database connection.
+
+    Returns
+    -------
+    list
+        A list of suburb names.
+    """
+    query = "SELECT name FROM suburb ORDER BY name;"
+    suburbs_df = pd.read_sql(query, conn)
+    return suburbs_df["name"].tolist()
+
+
 def cpt_vs30s_for_one_nzgd_id(
     selected_nzgd_id: int, conn: sqlite3.Connection
 ) -> pd.DataFrame:
