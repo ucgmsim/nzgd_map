@@ -787,6 +787,13 @@ def query_help():
     # Access the instance folder for application-specific data
     instance_path = Path(flask.current_app.instance_path)
 
+    # Connect to the database to get location names
+    with sqlite3.connect(instance_path / constants.database_file_name) as conn:
+        region_names = query_sqlite_db.get_region_names(conn)
+        district_names = query_sqlite_db.get_district_names(conn)
+        city_names = query_sqlite_db.get_city_names(conn)
+        suburb_names = query_sqlite_db.get_suburb_names(conn)
+
     # Get column names to display on the query help page
     col_names_to_display = [
         "record_name",
@@ -819,7 +826,12 @@ def query_help():
     col_names_to_display_str = ", ".join(col_names_to_display)
 
     return flask.render_template(
-        "views/query_help.html", col_names_to_display=col_names_to_display_str
+        "views/query_help.html",
+        col_names_to_display=col_names_to_display_str,
+        region_names=region_names,
+        district_names=district_names,
+        city_names=city_names,
+        suburb_names=suburb_names,
     )
 
 

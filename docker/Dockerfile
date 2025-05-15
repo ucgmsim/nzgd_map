@@ -4,7 +4,7 @@ FROM python:3.12-alpine
 
 # Uses Alpine’s package manager `apk` to install the necessary packages (`git`, `nginx`, 
 # `sqlite` libraries, and `uwsgi` for `Python3`) without caching, which helps keep the image size small.
-RUN apk add --no-cache git nginx sqlite-libs uwsgi-python3  
+RUN apk add --no-cache git nginx sqlite-libs uwsgi-python3
 
 # Creates the `/data` directory if it does not already exist.
 RUN mkdir -p /data  
@@ -19,7 +19,7 @@ RUN chown -R nobody:nobody /usr/var/nzgd_map-instance
 
 # Installs the `nzgd_map` package directly from a GitHub repository without using the pip cache, 
 # ensuring the latest version for container deployment.
-RUN pip install --no-cache-dir "git+https://github.com/ucgmsim/nzgd_map#egg=nzgd_map" uwsgi  
+RUN pip install --no-cache-dir "git+https://github.com/ucgmsim/nzgd_map.git@dev#egg=nzgd_map"  
 
 # Copies the `nzgd.ini` configuration file from the build context into the container’s root directory.
 COPY nzgd.ini /nzgd.ini  
@@ -36,4 +36,4 @@ COPY nginx.conf /etc/nginx/nginx.conf
 
 # Sets the default command to run when the container starts; it executes the `start.sh` script, 
 # which starts nginx in the foreground.
-CMD /start.sh  
+CMD /start.sh
