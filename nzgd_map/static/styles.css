@@ -28,6 +28,22 @@ form {
     /* Ensure white text color on hover */
 }
 
+/* Style the Update Selection button to match help-link */
+#query-button {
+    background-color: #007bff;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    font-weight: normal;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#query-button:hover {
+    background-color: #0069d9;
+}
+
 /* Query help page styles */
 .content-section {
     margin: 20px 0;
@@ -256,4 +272,16 @@ form {
 .js-plotly-plot,
 .plot-container {
     width: 100%;
+}
+
+/* Record count display */
+.record-count {
+    margin: 10px 0 10px 10px;
+    font-weight: bold;
+    color: #007bff;
+    padding: 5px;
+    text-align: center;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 4px solid #007bff;
 }

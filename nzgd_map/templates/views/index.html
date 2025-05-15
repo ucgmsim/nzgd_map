@@ -111,10 +111,12 @@
                     {% endfor %}
                 </select>
 
+                <!-- Record count display -->
+                <div class="record-count">Retrieved {{ num_records }} records</div>
+
                 <!-- Submit button to trigger a search -->
                 <button id="query-button">Update selection</button>
             </form>
-            <h4> Showing {{ num_records }} records </h4>
         </div>
 
         <!-- Right column: Histogram -->
