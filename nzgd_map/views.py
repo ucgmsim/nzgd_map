@@ -5,7 +5,6 @@ Each view is a function that returns an HTML template to render in the browser.
 
 import os
 import sqlite3
-import pathlib
 from collections import OrderedDict
 from io import StringIO
 from pathlib import Path
@@ -15,7 +14,6 @@ import numpy as np
 import pandas as pd  # Ensure pandas is imported
 import plotly.express as px
 import plotly.graph_objects as go  # Add import for plotly.graph_objects
-from flask import after_this_request
 from plotly.subplots import make_subplots
 
 from . import constants, query_sqlite_db
@@ -94,15 +92,9 @@ def index():
         database_df = database_df.query(query)
 
     #########################################################################################
-
-    # Calculate the center of the map for visualization
-    if not database_df.empty:
-        centre_lat = database_df["latitude"].mean()
-        centre_lon = database_df["longitude"].mean()
-    else:
-        # Default center for NZ if database_df is empty
-        centre_lat = -41.0
-        centre_lon = 174.0
+    # Centralize the map on New Zealand
+    centre_lat = -41.0
+    centre_lon = 174.0
 
     ## Make map marker sizes proportional to the absolute value of the Vs30 log residual.
     ## For records where the Vs30 log residual is unavailable, use the median of absolute value of the Vs30 log residuals.
@@ -149,23 +141,31 @@ def index():
         abs_residuals = database_df["vs30_log_residual"].abs()
         median_abs_residual = abs_residuals.median()
 
-        default_positive_size_for_fill = (
-            5.0  # Default size for filling NaNs if median is not suitable
+        # Determine a representative absolute residual value to use for NaN entries.
+        # This value will be scaled along with actual residuals.
+        default_abs_residual_for_nans = 0.2  # A small, representative absolute residual
+        fill_value_for_residual_nans = default_abs_residual_for_nans
+        if pd.notna(median_abs_residual) and median_abs_residual > 0:
+            # If a positive median absolute residual exists, use it
+            fill_value_for_residual_nans = median_abs_residual.round(1)
+
+        # Input for size calculation: absolute residuals, with NaNs filled
+        size_determining_residuals = abs_residuals.fillna(fill_value_for_residual_nans)
+
+        # Scale these residual values to marker sizes
+        # Final marker size = base_display_size + (size_determining_residuals * residual_scaling_factor)
+        base_display_size = 10  # Minimum size for a point (e.g., when residual is zero)
+        residual_scaling_factor = (
+            8.0  # Factor to scale the contribution of the residual to the size
         )
-        fill_value_for_nan = default_positive_size_for_fill
 
-        if pd.notna(median_abs_residual):
-            if median_abs_residual > 0:
-                fill_value_for_nan = median_abs_residual.round(
-                    1
-                )  # Use rounded positive median
-            # If median_abs_residual is 0, fill_value_for_nan remains default_positive_size_for_fill
+        database_df["size"] = base_display_size + (
+            size_determining_residuals * residual_scaling_factor
+        )
 
-        # Create the 'size' column, fill NaNs, and ensure a minimum positive size
-        database_df["size"] = abs_residuals.fillna(fill_value_for_nan)
-        database_df["size"] = np.maximum(
-            database_df["size"], 2.0
-        )  # Enforce minimum size of 2.0
+        # Ensure a final minimum display size.
+        # This reinforces that no point will be smaller than base_display_size.
+        database_df["size"] = np.maximum(database_df["size"], base_display_size)
 
         # Prepare customdata for hover info
         hover_cols_for_customdata = [
@@ -199,7 +199,12 @@ def index():
                     color=database_df[colour_by] if colour_by in database_df else None,
                     colorscale="Viridis",
                     showscale=True if colour_by in database_df else False,
-                    colorbar_title_text=colour_by if colour_by in database_df else "",
+                    colorbar=dict(
+                        title=colour_by if colour_by in database_df else "",
+                        len=0.92,  # Make colorbar 92% of the plot height
+                        y=0.45,  # Position colorbar at 45% from the bottom
+                        yanchor="middle",
+                    ),
                 ),
                 text=database_df.get("record_name", ""),  # Use .get for record_name
                 customdata=custom_data_for_db,
@@ -250,9 +255,10 @@ def index():
                 lon=geonet_df["longitude"],
                 mode="markers",
                 marker=go.scattermapbox.Marker(
-                    size=10,
+                    size=12,
                     color="deeppink",
-                    opacity=0.7,
+                    opacity=0.8,
+                    symbol="circle",
                 ),
                 text=geonet_df["code_name"],
                 hoverinfo="text",
@@ -263,10 +269,11 @@ def index():
 
     # Update map layout
     map_fig.update_layout(
-        mapbox_style="open-street-map",
-        mapbox_zoom=4,
-        mapbox_center_lat=centre_lat,
-        mapbox_center_lon=centre_lon,
+        mapbox=dict(
+            style="open-street-map",
+            zoom=5,
+            center=dict(lat=centre_lat, lon=centre_lon),
+        ),
         margin={"r": 0, "t": 0, "l": 0, "b": 0},
         showlegend=True,
         legend_title_text="Legend",
@@ -327,6 +334,14 @@ def index():
             full_html=False,  # Embed only the necessary map HTML
             include_plotlyjs=False,  # Exclude Plotly.js library (assume it's loaded separately)
             default_height="85vh",  # Set the map height
+            config={
+                "scrollZoom": True,  # Enable scroll zoom in the HTML config too
+                "displayModeBar": True,  # Display the mode bar with additional controls
+                "modeBarButtonsToAdd": [
+                    "zoomIn",
+                    "zoomOut",
+                ],  # Add explicit zoom buttons
+            },
         ),
         selected_vs30_correlation=vs30_correlation,  # Pass the selected vs30_correlation for the template
         selected_spt_vs_correlation=spt_vs_correlation,
