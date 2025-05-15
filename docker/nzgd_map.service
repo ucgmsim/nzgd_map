@@ -1,0 +1,41 @@
+# Starts the [Unit] section, which contains metadata and defines relationships with other services.
+[Unit]
+
+# Provides a short description of the service as "NZGD Map Service".
+Description=NZGD Map Service
+
+# Starts the [Service] section, which controls how the service process executes and behaves.
+[Service]
+
+# Run the service as a user. <USER> is the username of the user that will run the service.
+User=<USER>
+# <DOCKER_SOCKET_FOR_USER> is the four digit User ID (UID) given by `id -u` when run as <USER> 
+Environment="DOCKER_HOST=unix:///run/user/<DOCKER_SOCKET_FOR_USER>/docker.sock"
+
+# Sets the start timeout to 0 seconds, meaning systemd will wait indefinitely for the service to start.
+TimeoutStartSec=0
+
+# Configures systemd to always restart the service if it stops for any reason.
+Restart=always
+
+# Runs this command before starting the service, which pulls the latest Docker image "earthquakesuc/nzgd_map".
+ExecStartPre=docker pull earthquakesuc/nzgd_map
+
+# Starts the Docker container using the pulled image with the following options:
+# - --rm: Automatically removes the container when it exits.
+# - --name %n: Names the container based on the service name.
+# - -p 7777:80: Maps host port 7777 to container port 80.
+# - -v /mnt/mantle_data/nzgd_map:/usr/var/nzgd_map-instance: Mounts a host directory into the container.
+ExecStart=docker run --rm --name %n -p 7777:80 -v /mnt/mantle_data/nzgd_map:/usr/var/nzgd_map-instance earthquakesuc/nzgd_map
+
+# Stops the Docker container gracefully when the service is stopped.
+ExecStop=docker stop %n
+
+# Removes the container after stopping to clean up any remnants.
+ExecStopPost=docker rm %n
+
+# Starts the [Install] section, which defines how the service integrates with the system boot process.
+[Install]
+
+# Specifies that the service should be started when the default system target (usually multi-user mode) is reached.
+WantedBy=default.target

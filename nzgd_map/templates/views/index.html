@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+    window.addEventListener('load', function () {
+        MathJax.typeset();
+    });
+</script>
+{% endblock %}
+
+{% block title %} NZGD data {% endblock %}
+
+{% block content %}
+<div class="layout-container">
+    <section>
+        <h1>CPT and SPT data extracted from NZGD records</h1>
+        <h4>Date of last update from NZGD: {{ date_of_last_nzgd_retrieval }}</h4>
+        <p><a href="{{ url_for('views.query_help') }}" target="_blank" class="help-link">Need help with queries? Click
+                here
+                for examples and syntax</a></p>
+
+        <div class="geonet-upload-section">
+            <h4>GeoNet Station Data</h4>
+            <p>You can upload a custom GeoNet station file to replace the default one:</p>
+
+            <div class="geonet-actions">
+                <form action="{{ url_for('views.upload_geonet') }}" method="post" enctype="multipart/form-data"
+                    class="upload-form">
+                    <div class="file-input-wrapper">
+                        <input type="file" name="geonet_file" id="geonet_file" accept=".txt,.ll,.csv" />
+                        <button type="submit" class="file-submit-btn">Upload GeoNet Station File</button>
+                    </div>
+                    {% if session.get('user_geonet_file') %}
+                    <span class="file-status">✓ Custom file loaded</span>
+                    {% else %}
+                    <span class="file-status">Using default file</span>
+                    {% endif %}
+                </form>
+
+                {% if session.get('user_geonet_file') %}
+                <form action="{{ url_for('views.clear_geonet') }}" method="post" class="clear-form">
+                    <button type="submit" class="clear-btn">Reset to Default File</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Top row with form and histogram side by side -->
+    <div class="top-row">
+        <!-- Left column: Query form -->
+        <div class="form-column">
+            <form id="query-form" method="GET" action="{{url_for('views.index')}}">
+                <!-- Text input for a custom query, passed as the 'query' parameter in the URL -->
+                <input id="query-input" name="query" hx-get="/validate" hx-trigger="keyup delay:300ms changed"
+                    hx-target="#error" placeholder="Input your pandas-compatible search query"
+                    value="{{query or ''}}" />
+                <div id="error"></div>
+
+                <!-- Dropdown to select a vs30 correlation -->
+                <label id="query-label" for="vs30_correlation">Select a Vs-Vs30 correlation option</label>
+                <select id="query-input" name="vs30_correlation">
+                    <!-- Populate dropdown options dynamically from the list of vs30_correlations -->
+                    {% for vs30_correlation in vs30_correlations %}
+                    <option value="{{vs30_correlation}}" {% if selected_vs30_correlation==vs30_correlation %}selected{%
+                        endif %}>
+                        {{vs30_correlation}}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <!-- Dropdown to select a spt_vs_correlation -->
+                <label id="query-label_spt" for="spt_vs_correlation">Select a SPT-Vs correlation option</label>
+                <select id="query-input" name="spt_vs_correlation">
+                    <!-- Populate dropdown options dynamically from the list of vs30_correlations -->
+                    {% for spt_vs_correlation in spt_vs_correlations %}
+                    <option value="{{spt_vs_correlation}}" {% if selected_spt_vs_correlation==spt_vs_correlation
+                        %}selected{% endif %}>
+                        {{spt_vs_correlation}}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <!-- Dropdown to select a cpt_vs_correlation -->
+                <label id="query-label_cpt" for="cpt_vs_correlation">Select a CPT-Vs correlation option</label>
+                <select id="query-input" name="cpt_vs_correlation">
+                    <!-- Populate dropdown options dynamically from the list of vs30_correlations -->
+                    {% for cpt_vs_correlation in cpt_vs_correlations %}
+                    <option value="{{cpt_vs_correlation}}" {% if selected_cpt_vs_correlation==cpt_vs_correlation
+                        %}selected{% endif %}>
+                        {{cpt_vs_correlation}}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <!-- Dropdown to select a parameter to colour points by on the map -->
+                <label for="colour_by">Select a value to colour by</label>
+                <select id="query-colour" name="colour_by">
+                    {% for column, label in colour_variables %}
+                    <option value="{{column}}" {% if column==colour_by %}selected{% endif %}> {{label}}</option>
+                    {% endfor %}
+                </select>
+
+                <!-- Dropdown to select a parameter to plot as a histogram -->
+                <label id="hist-by-query" for="hist_by">Select a parameter to plot as a histogram</label>
+                <select id="hist-by-query" name="hist_by">
+                    <!-- Populate dropdown options dynamically from the list of colour_by options -->
+                    {% for column, label in colour_variables %}
+                    <option value="{{column}}" {% if column==hist_by %}selected{% endif %}> {{label}}</option>
+                    {% endfor %}
+                </select>
+
+                <!-- Record count display -->
+                <div class="record-count">Retrieved {{ num_records }} records</div>
+
+                <!-- Submit button to trigger a search -->
+                <button id="query-button">Update selection</button>
+            </form>
+        </div>
+
+        <!-- Right column: Histogram -->
+        <div class="histogram-column">
+            <div class="histogram-container">
+                {{hist_plot | safe}}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom row: Map spanning full width -->
+    <div class="map-row">
+        <section role="figure">
+            {{map | safe}}
+            <!-- Render the Plotly map as raw HTML. 'safe' prevents auto-escaping of HTML content -->
+            <script>
+                var plot_element =
+                    document.getElementsByClassName("plotly-graph-div")[0];
+                plot_element.on("plotly_click", function (data) {
+                    {
+                        var point = data.points[0];
+                        if (point) {
+                            if (point.hovertext.startsWith("BH")) {
+                                window.open(`{{url_for('views.spt_record', record_name='')}}/${point.hovertext}`, '_blank', 'noopener,noreferrer');
+                            }
+                            if (point.hovertext.startsWith("CPT") || point.hovertext.startsWith("SCPT")) {
+                                window.open(`{{url_for('views.cpt_record', record_name='')}}/${point.hovertext}`, '_blank', 'noopener,noreferrer');
+                            }
+                        }
+                    }
+                });
+            </script>
+        </section>
+    </div>
+</div>
+
+{% endblock %}

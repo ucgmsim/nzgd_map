@@ -7,7 +7,7 @@
 {% block content %}
 <h1> Overview of {{ record_details[0]["record_name"] }} </h1>
 
-    <a href="{{ url_str }}"> Download original NZGD files</a> <br>
+    <a href="{{ url_str }}"> Download NZGD source files </a> <br>
     <a href="{{ url_for('views.download_spt_data', filename=record_details[0]["record_name"] + '_data.csv') }}">Download extracted data</a><br>
     <a href="{{ url_for('views.download_spt_soil_types', filename=record_details[0]["record_name"] + '_soil_types.csv') }}">Download extracted soil types</a>
 
@@ -121,12 +121,14 @@
 
 <table>
     <tr>
-        <th>Top depth (m)</th>
+        <th>Layer top depth (m)</th>
+        <th>Layer thickness</th>
         <th>Soil type</th>
     </tr>
     {% for row in soil_type %}
     <tr>
-        <td>{{ "%.2f"%(row['top_depth']) }}</td>
+       <td>{{ row['top_depth'] | round(3) }}</td>
+        <td>{{ row['layer_thickness'] }}</td>
         <td>{{ row['soil_type'] }}</td>
     </tr>
     {% endfor %}

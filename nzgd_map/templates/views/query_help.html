@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %} Query Help - NZGD Map {% endblock %}
+
+{% block content %}
+<section>
+    <h1>Query Help for NZGD Map</h1>
+
+    <div class="content-section">
+        <h2>Available Query Fields</h2>
+        <div class="field-list">
+            <ul>
+                {% for field in col_names_to_display.split(", ") %}
+                <li><code>{{ field }}</code></li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <h2>Example Queries</h2>
+        <ul>
+            <li><code>(vs30 < 100) & (region=="Canterbury")</code> - Show records where Vs30 is less than 100 m/s and
+                the region is Canterbury</li>
+            <li><code>type_prefix == "X"</code> - Show records of a particular type. X = "BH", "CPT", or "SCPT". Note
+                that "BH" (borehole) also covers SPT</li>
+            <li><code>investigation_date > "2024-08-20"</code> - Show records with date of investigation later than 20
+                August 2024</li>
+        </ul>
+
+        <h2>Query Syntax</h2>
+        <p>Queries use pandas query syntax. Here are some common operations:</p>
+        <ul>
+            <li>Comparison operators: <code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>,
+                <code>&lt;=</code>, <code>&gt;=</code>
+            </li>
+            <li>Logical operators: <code>&</code> (and), <code>|</code> (or), <code>~</code> (not)</li>
+            <li>String comparison: <code>column == "value"</code> (exact match),
+                <code>column.str.contains("value")</code> (partial match)
+            </li>
+            <li>Numerical ranges: <code>(column > lower_bound) & (column < upper_bound)</code></li>
+        </ul>
+
+        <h2>Advanced Examples</h2>
+        <ul>
+            <li><code>deepest_depth > 20</code> - Records with depth greater than 20 meters</li>
+            <li><code>(vs30 > 200) & (vs30 < 400)</code> - Records with Vs30 between 200 and 400 m/s</li>
+            <li><code>(region=="Canterbury") | (region=="Auckland")</code> - Records from Canterbury OR Auckland regions
+            </li>
+            <li><code>~(type_prefix=="BH")</code> - All records EXCEPT boreholes</li>
+        </ul>
+
+        <h2>Available regions</h2>
+        <div class="location-list">
+            <ul>
+                {% for region in region_names %}
+                <li><code>{{ region }}</code></li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <h2>Available districts</h2>
+        <div class="location-list">
+            <ul>
+                {% for district in district_names %}
+                <li><code>{{ district }}</code></li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <h2>Available cities</h2>
+        <div class="location-list">
+            <ul>
+                {% for city in city_names %}
+                <li><code>{{ city }}</code></li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <h2>Available suburbs</h2>
+        <div class="location-list">
+            <ul>
+                {% for suburb in suburb_names %}
+                <li><code>{{ suburb }}</code></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="back-link">
+        <a href="{{ url_for('views.index') }}">&larr; Back to Map</a>
+    </div>
+</section>
+{% endblock %}
