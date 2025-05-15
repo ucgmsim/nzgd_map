@@ -120,7 +120,6 @@ def index():
     ## Make map marker sizes proportional to the absolute value of the Vs30 log residual.
     ## For records where the Vs30 log residual is unavailable, use the median of absolute value of the Vs30 log residuals.
     ## This calculation is moved inside the 'if not database_df.empty:' block below.
-    marker_size_description_text = r"Marker size indicates the magnitude of the Vs30 log residual, given by \(\mathrm{|(\log(SPT_{Vs30}) - \log(Foster2019_{Vs30})|}\). A minimum size is applied for visibility."
 
     ## Make new columns of string values to display instead of the float values for Vs30 and log residual
     ## so that an explanation can be shown when the vs30 value or the log residual
@@ -315,16 +314,6 @@ def index():
             title_text=f"No data for {hist_by}", xaxis_title=hist_by
         )
 
-    hist_description_text = (
-        f"Histogram of {hist_by}, showing {len(database_df)} records"
-    )
-
-    # If plotting the vs30_log_residual, add a note about the log residual calculation
-    if hist_by == "vs30_log_residual":
-        residual_description_text = r"Note: Vs30 residuals are given by \(\mathrm{\log(SPT_{Vs30}) - \log(Foster2019_{Vs30})} \)"
-    else:
-        residual_description_text = ""
-
     col_names_to_display = [
         "record_name",
         "nzgd_id",
@@ -361,7 +350,7 @@ def index():
         map=map_fig.to_html(  # Use map_fig here
             full_html=False,  # Embed only the necessary map HTML
             include_plotlyjs=False,  # Exclude Plotly.js library (assume it's loaded separately)
-            default_height="85vh",  # Set the map height
+            default_height="70vh",  # Set the map height for the new layout
             config={
                 "scrollZoom": True,  # Enable scroll zoom in the HTML config too
                 "displayModeBar": True,  # Display the mode bar with additional controls
@@ -402,11 +391,8 @@ def index():
         hist_plot=hist_plot.to_html(
             full_html=False,  # Embed only the necessary map HTML
             include_plotlyjs=False,  # Exclude Plotly.js library (assume it's loaded separately)
-            default_height="85vh",  # Set the map height
+            default_height="50vh",  # Reduced height to fit side-by-side with form
         ),
-        marker_size_description_text=marker_size_description_text,
-        hist_description_text=hist_description_text,
-        residual_description_text=residual_description_text,
         col_names_to_display=col_names_to_display_str,
     )
 

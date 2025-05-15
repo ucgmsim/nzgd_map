@@ -191,3 +191,69 @@ form {
 .clear-form {
     margin: 0;
 }
+
+/* Layout styles for the two-column top section */
+.layout-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.top-row {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-column {
+    flex: 1;
+    min-width: 300px;
+    max-width: 50%;
+}
+
+.histogram-column {
+    flex: 1;
+    min-width: 300px;
+}
+
+.map-row {
+    width: 100%;
+}
+
+/* Make the main form more compact for side-by-side layout */
+#query-form {
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+/* Responsive layout for small screens */
+@media (max-width: 992px) {
+    .top-row {
+        flex-direction: column;
+    }
+
+    .form-column,
+    .histogram-column {
+        max-width: 100%;
+    }
+}
+
+/* Style adjustments for the histogram in the new layout */
+.histogram-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.histogram-container h4 {
+    margin-top: 0;
+}
+
+/* Make plotly elements fit their containers better */
+.js-plotly-plot,
+.plot-container {
+    width: 100%;
+}
