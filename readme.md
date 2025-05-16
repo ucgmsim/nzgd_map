@@ -31,55 +31,74 @@ To install an editable version of `nzgd_map` outside a Docker container, enter t
 
 ### Installing inside a Docker container
 
-To install the `nzgd_map` package inside a Docker container, use the files in the `docker` folder 
-and enter the following commands in a terminal. Depending on whether Docker is configured to 
-run as root or a user (rootless Docker), use 
-[root_docker_nzgd_map.service](docker/root_docker_nzgd_map.service) or 
-[rootless_docker_nzgd_map.service](docker/rootless_docker_nzgd_map.service), respectively.
+#### Build and push the image of the Docker container
+
+These steps can be carried out on any machine that has Docker (i.e., they do not need to be carried out on the machine that will host the website).  
+
+* Clone this repo
+    * `git clone git@github.com:ucgmsim/nzgd_map.git`
+
+* In a terminal, navigate to the `docker` folder in the cloned repo (the location will depend on where the repo was cloned)
+    * e.g., `cd /home/username/nzgd_map/docker`
+
+* Build the Docker image, which includes the `nzgd_map` source files due to a `git clone` command in `Dockerfile`. In the following command, `earthquakesuc` is our Docker Hub username.
+
+    * `docker build -t earthquakesuc/nzgd_map .` (if any cached `nzgd_map` source files can be kept)
+
+    * `docker build --no-cache -t earthquakesuc/nzgd_map .` (if any cached `nzgd_map` source files should be overwritten, for example if `nzgd_map` has been updated)
+
+* Push the image to Docker Hub (see the section below on logging in to Docker Hub)
+    * `docker push earthquakesuc/nzgd_map`
 
 
-* If Docker is run as root, skip these steps. Otherwise, if running Docker as a user (rootless Docker), follow these steps:
-    * Enable and start the docker service for your user
-        * `sudo systemctl enable --now docker`
-    * Allow your user to "linger" to run services at start up
-        * `sudo loginctl enable-linger $(whoami)`
-    * Add the following lines to your `~/.bashrc` file.
-        * `export PATH=/usr/bin:$PATH`
-        * `export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock`
+#### Create a dedicated user account on the host machine to run the service
 
-* Regardless of how Docker is run (root or rootless), perform the following steps:
-    * In a terminal, change to the `docker` folder in the repository
-        * e.g., `cd /home/username/src/nzgd_map/docker`
-    * Build the Docker image (which includes the `nzgd_map` package due to a pip install command in `Dockerfile`). 
-    In the following command, `earthquakesuc` is our Docker Hub username.
-        * If this is the first time building the image, or the `nzgd_map` package has not changed, run the following command:
-            * `docker build -t earthquakesuc/nzgd_map .` (add `sudo` if running as root) 
-        * If this is not the first time building the image, and the `nzgd_map` package has changed, run with `--no-cache` 
-      so the image will be built with the latest version of the `nzgd_map` package:
-            * `docker build --no-cache -t earthquakesuc/nzgd_map .` (add `sudo` if running as root) 
+This guide uses **Rootless Docker**, meaning that the Docker installation is for a specific user that does not require `sudo`. If you need to install Rootless Docker on your system, follow [this guide](https://docs.docker.com/engine/security/rootless/).
 
-    * Push the image to Docker Hub (see the section below on logging in to Docker Hub)
-        * `docker push earthquakesuc/nzgd_map` (add `sudo` if running as root) 
 
-    * Copy the relevant service file to the machine where you want to run the `nzgd_map` package.
-        * If running Docker as root:
-            * `cp root_docker_nzgd_map.service /etc/systemd/system/`
-        * If running Docker as a user (rootless Docker)
-            * `cp rootless_docker_nzgd_map.service /etc/systemd/system/`
-    * Reload the systemd unit files.
-        *  `sudo systemctl daemon-reload`
+* Create a user called `nzgd_map` to run the systemd service
+    *  `sudo useradd -m -s /bin/bash nzgd_map` where `-m` creates a home directory and `-s /bin/bash` sets the default shell to bash.
 
-    * Pull the latest Docker image from Docker Hub and run the `nzgd_map` container by starting the relevant service (`root_docker_nzgd_map` or `rootless_docker_nzgd_map`).
-        * If the service is not currently running, start it.
-            * `sudo systemctl start rootless_docker_nzgd_map` or `sudo systemctl start root_docker_nzgd_map`
-        * If the service is already running, restart it.
-            * `sudo systemctl restart rootless_docker_nzgd_map` or `sudo systemctl restart root_docker_nzgd_map`
+* Temporarily give the `nzgd_map` user `sudo` privileges to make the next few steps simpler (`sudo` privileges will be revoked later)
+    *  `sudo usermod -aG sudo nzgd_map`
 
-    * Check the status of the service to ensure it is running
-        * `sudo systemctl status rootless_docker_nzgd_map` or `sudo systemctl status root_docker_nzgd_map`
+* Change to the `nzgd_map` user
+    * e.g., `exit`
+    * e.g., `ssh nzgd_map@mantle` (if hosting on Mantle)
 
-    * Check the status of the `nzgd_map` container to ensure it is running
-        * `docker ps` (add `sudo` if running as root)
+* Set the `nzgd_map` user's Docker to start at startup and also start it now 
+    * `sudo systemctl enable --now docker` where `enable` sets Docker to start at startup and `--now` also starts it now.
+
+* Allow the `nzgd_map` user to linger so it will be available at startup 
+    * `sudo loginctl enable-linger $(whoami)`
+* Add the following line to the `nzgd_map` user's `~/.bashrc` file to point to the user's Docker socket
+    * `export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock`
+
+* Change back to your main account with `sudo` privileges
+    * e.g., `exit`
+    * e.g., `ssh main_username@mantle`
+
+* Revoke the `nzgd_map` user's `sudo` privileges as they are no longer needed 
+    * `sudo deluser nzgd_map sudo`
+
+#### Start the service that runs the website
+
+* Copy the `nzgd_map.service` file to the host machine
+    * e.g., `cp nzgd_map.service /etc/systemd/system/`
+* Reload the systemd unit files
+    *  `sudo systemctl daemon-reload`
+* Set the service to start on startup with `enable`
+    * `sudo systemctl enable nzgd_map.service`
+
+* Start the service to pull and run the latest image of the container from Docker Hub
+    * `sudo systemctl start nzgd_map.service` (if **not** already running)
+    * `sudo systemctl restart nzgd_map.service` (if already running)
+
+* Check the status of the service to ensure it's running
+    * `sudo systemctl status nzgd_map.service` 
+
+* Check the status of the `nzgd_map` container (as the `nzgd_map` user)
+    * `docker ps`
 
 ### Logging in to Docker Hub
 Open a terminal and enter the following command:
@@ -103,9 +122,8 @@ the message, and our organization's Docker Hub username and password to log in.
 
 The following files in the `docker` directory set up the NZGD map service in a container, and run it on startup with systemd. 
 
-- [If running Docker as root: Service file to start NZGD map service](docker/root_docker_nzgd_map.service)
-- [If running Docker as a user (Rootless Docker): Service file to start NZGD map service](docker/rootless_docker_nzgd_map.service)
-- [Dockerfile defining NZGD map container](docker/Dockerfile)
+- [Service file to run the NZGD web app](docker/nzgd_map.service)
+- [Dockerfile defining the NZGD map container](docker/Dockerfile)
 - [uWSGI configuration for NZGD server](docker/nzgd.ini)
 - [nginx config exposing server outside the container](docker/nginx.conf)
 - [Entrypoint script that runs when container is executed](docker/start.sh)
