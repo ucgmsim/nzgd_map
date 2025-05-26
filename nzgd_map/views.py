@@ -78,6 +78,10 @@ def index():
             conn=conn,
         )
 
+    geonet_stations_df = pd.read_csv(
+        instance_path / "geoNet_stats+2023-06-28.ll", sep=r"\s+", names=["lon", "lat", "name"]
+    )
+
     database_df["vs30"] = query_sqlite_db.clip_highest_and_lowest_percent(
         database_df["vs30"], 0.1, 99.9
     )
@@ -158,6 +162,32 @@ def index():
                 ("vs30_log_residual", False),
             ]
         ),
+    )
+
+    geonet_fig = px.scatter_map(
+    geonet_stations_df,
+    lat="lat",
+    lon="lon",
+    hover_name="name",
+    )
+
+    for trace in geonet_fig.data:
+        trace.name = "GeoNet station"
+        trace.showlegend = True
+
+    for trace in geonet_fig.data:
+        map.add_trace(trace)
+
+    map_text = ("Click investigation markers for details.<br>"                
+               "Investigation marker size is Vs30<br>"
+               "residual with Foster et al. (2019).")
+
+    map.update_layout(
+    legend_title_text=map_text,
+    legend=dict(
+        x=0.01,
+        y=0.99,    
+    ),
     )
 
     # Create an interactive histogram using Plotly
