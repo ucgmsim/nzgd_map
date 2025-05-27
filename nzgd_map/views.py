@@ -79,6 +79,9 @@ def index():
     # Retrieve an optional custom query from request arguments
     query = flask.request.args.get("query", default=None)
 
+    # GeoNet station visibility state from session
+    show_geonet_visibility = flask.session.get('show_geonet_stations', 'on')
+
     with sqlite3.connect(instance_path / constants.database_file_name) as conn:
         vs_to_vs30_correlation_df = pd.read_sql_query(
             "SELECT * FROM vstovs30correlation", conn
@@ -98,9 +101,53 @@ def index():
             conn=conn,
         )
 
-    geonet_stations_df = pd.read_csv(
-        instance_path / "geoNet_stats+2023-06-28.ll", sep=r"\s+", names=["lon", "lat", "name"]
-    )
+    # Determine GeoNet stations data: user-uploaded or default
+    user_geonet_file_path = get_user_geonet_file_path()  # This returns Path object or None
+    default_geonet_file_path = instance_path / "geoNet_stats+2023-06-28.ll"
+
+    if user_geonet_file_path:  # Relies on get_user_geonet_file_path to return valid, existing path or None
+        try:
+            flask.current_app.logger.info(
+                f"Attempting to load user-uploaded GeoNet station file: {user_geonet_file_path}"
+            )
+            geonet_stations_df = pd.read_csv(
+                user_geonet_file_path,
+                delim_whitespace=True,
+                header=None,
+                names=["lon", "lat", "name"],  # Consistent column names
+                comment="/",  # Treat lines starting with / as comments
+            )
+            # Validate and clean data
+            geonet_stations_df["lon"] = pd.to_numeric(
+                geonet_stations_df["lon"], errors="coerce"
+            )
+            geonet_stations_df["lat"] = pd.to_numeric(
+                geonet_stations_df["lat"], errors="coerce"
+            )
+            geonet_stations_df.dropna(subset=["lon", "lat"], inplace=True)
+
+            if geonet_stations_df.empty:
+                flask.current_app.logger.warning(
+                    f"User GeoNet station file {user_geonet_file_path} is empty or resulted in no valid data after parsing. Falling back to default."
+                )
+                geonet_stations_df = pd.read_csv(
+                    default_geonet_file_path, sep=r"\s+", names=["lon", "lat", "name"]
+                )
+        except Exception as e:
+            flask.current_app.logger.error(
+                f"Error processing user GeoNet station file {user_geonet_file_path}: {e}. Falling back to default."
+            )
+            geonet_stations_df = pd.read_csv(
+                default_geonet_file_path, sep=r"\s+", names=["lon", "lat", "name"]
+            )
+    else:
+        # This 'else' covers "no file in session" or "file in session but doesn't exist/is invalid"
+        flask.current_app.logger.info(
+            "No valid user-uploaded GeoNet station file found. Loading default."
+        )
+        geonet_stations_df = pd.read_csv(
+            default_geonet_file_path, sep=r"\s+", names=["lon", "lat", "name"]
+        )
 
     database_df["vs30"] = query_sqlite_db.clip_highest_and_lowest_percent(
         database_df["vs30"], 0.1, 99.9
@@ -117,13 +164,19 @@ def index():
         database_df = database_df.query(query)
 
     #########################################################################################
-    # Centralize the map on New Zealand
-    centre_lat = -41.0
-    centre_lon = 174.0
+
+    # Calculate the center of the map for visualization
+    centre_lat = database_df["latitude"].mean()
+    centre_lon = database_df["longitude"].mean()
 
     ## Make map marker sizes proportional to the absolute value of the Vs30 log residual.
     ## For records where the Vs30 log residual is unavailable, use the median of absolute value of the Vs30 log residuals.
-    ## This calculation is moved inside the 'if not database_df.empty:' block below.
+    database_df["size"] = (
+        database_df["vs30_log_residual"]
+        .abs()
+        .fillna(round(database_df["vs30_log_residual"].abs().median(), 1))
+    )
+    marker_size_description_text = r"""Marker size indicates the magnitude of the Vs30 log residual, given by \\\\(\\\\mathrm{|(\\\\log(SPT_{Vs30}) - \\\\log(Foster2019_{Vs30})|)}\\\\)"""
 
     ## Make new columns of string values to display instead of the float values for Vs30 and log residual
     ## so that an explanation can be shown when the vs30 value or the log residual
@@ -156,193 +209,79 @@ def index():
     )
     database_df["deepest_depth (m)"] = database_df["deepest_depth"]
 
-    # Initialize a go.Figure for the map
-    map_fig = go.Figure()
-
-    # Add database points if available
-    if not database_df.empty:
-        # Calculate marker sizes for database_df
-        abs_residuals = database_df["vs30_log_residual"].abs()
-        median_abs_residual = abs_residuals.median()
-
-        # Determine a representative absolute residual value to use for NaN entries.
-        # This value will be scaled along with actual residuals.
-        default_abs_residual_for_nans = 0.2  # A small, representative absolute residual
-        fill_value_for_residual_nans = default_abs_residual_for_nans
-        if pd.notna(median_abs_residual) and median_abs_residual > 0:
-            # If a positive median absolute residual exists, use it
-            fill_value_for_residual_nans = median_abs_residual.round(1)
-
-        # Input for size calculation: absolute residuals, with NaNs filled
-        size_determining_residuals = abs_residuals.fillna(fill_value_for_residual_nans)
-
-        # Scale these residual values to marker sizes
-        # Final marker size = base_display_size + (size_determining_residuals * residual_scaling_factor)
-        base_display_size = 10  # Minimum size for a point (e.g., when residual is zero)
-        residual_scaling_factor = (
-            8.0  # Factor to scale the contribution of the residual to the size
-        )
-
-        database_df["size"] = base_display_size + (
-            size_determining_residuals * residual_scaling_factor
-        )
-
-        # Ensure a final minimum display size.
-        # This reinforces that no point will be smaller than base_display_size.
-        database_df["size"] = np.maximum(database_df["size"], base_display_size)
-
-        # Prepare customdata for hover info
-        hover_cols_for_customdata = [
-            "deepest_depth (m)",
-            "Vs30 (m/s)",
-            "Vs30_log_resid",
-        ]
-        custom_data_for_db = []
-        if all(col in database_df.columns for col in hover_cols_for_customdata):
-            custom_data_for_db = database_df[hover_cols_for_customdata]
-        else:
-            # Create placeholder customdata if columns are missing to prevent errors
-            num_rows = len(database_df)
-            custom_data_for_db = pd.DataFrame(
-                {
-                    "deepest_depth (m)": ["N/A"] * num_rows,
-                    "Vs30 (m/s)": ["N/A"] * num_rows,
-                    "Vs30_log_resid": ["N/A"] * num_rows,
-                }
-            )
-
-        map_fig.add_trace(
-            go.Scattermapbox(
-                lat=database_df["latitude"],
-                lon=database_df["longitude"],
-                mode="markers",
-                marker=go.scattermapbox.Marker(
-                    size=database_df[
-                        "size"
-                    ],  # Use the robustly calculated 'size' column
-                    color=database_df[colour_by] if colour_by in database_df else None,
-                    colorscale="Viridis",
-                    showscale=True if colour_by in database_df else False,
-                    colorbar=dict(
-                        title=colour_by if colour_by in database_df else "",
-                        len=0.92,  # Make colorbar 92% of the plot height
-                        y=0.45,  # Position colorbar at 45% from the bottom
-                        yanchor="middle",
-                    ),
-                ),
-                text=database_df.get("record_name", ""),  # Use .get for record_name
-                customdata=custom_data_for_db,
-                hovertemplate=(
-                    "<b>%{text}</b><br><br>"
-                    + "Deepest Depth (m): %{customdata[0]}<br>"
-                    + "Vs30 (m/s): %{customdata[1]}<br>"
-                    + "Vs30 Log Resid: %{customdata[2]}"
-                    + "<extra></extra>"
-                ),
-                name="NZGD Records",
-            )
-        )
-
-    # Load GeoNet station data
-    # First check for user-uploaded file, otherwise use default
-    user_geonet_file = get_user_geonet_file_path()
-    geonet_file_path = (
-        user_geonet_file
-        if user_geonet_file
-        else instance_path / "geoNet_stats+2023-06-28.ll"
-    )
-
-    try:
-        # Skip the first line if it's a comment, and handle potential comments within the file
-        geonet_df = pd.read_csv(
-            geonet_file_path,
-            delim_whitespace=True,
-            header=None,
-            names=["longitude", "latitude", "code_name"],
-            comment="/",  # Treat lines starting with / as comments
-        )
-        # Ensure longitude and latitude are numeric, coercing errors to NaN
-        geonet_df["longitude"] = pd.to_numeric(geonet_df["longitude"], errors="coerce")
-        geonet_df["latitude"] = pd.to_numeric(geonet_df["latitude"], errors="coerce")
-        # Drop rows with NaN in longitude or latitude, which might result from parsing issues or comments
-        geonet_df.dropna(subset=["longitude", "latitude"], inplace=True)
-
-    except FileNotFoundError:
-        geonet_df = pd.DataFrame(columns=["longitude", "latitude", "code_name"])
-        flask.current_app.logger.warning(
-            f"GeoNet station file not found: {geonet_file_path}"
-        )
-    except pd.errors.EmptyDataError:  # Handles empty file or file with only comments
-        geonet_df = pd.DataFrame(columns=["longitude", "latitude", "code_name"])
-        flask.current_app.logger.warning(
-            f"GeoNet station file is empty or could not be parsed: {geonet_file_path}"
-        )
-
-    # Add GeoNet stations to the map if data is available
-    if not geonet_df.empty:
-        map_fig.add_trace(
-            go.Scattermapbox(
-                lat=geonet_df["latitude"],
-                lon=geonet_df["longitude"],
-                mode="markers",
-                marker=go.scattermapbox.Marker(
-                    size=12,
-                    color="deeppink",
-                    opacity=0.8,
-                    symbol="circle",
-                ),
-                text=geonet_df["code_name"],
-                hoverinfo="text",
-                name="GeoNet Stations",
-                showlegend=True,
-            )
-        )
-
-    # Update map layout
-    map_fig.update_layout(
-        mapbox=dict(
-            style="open-street-map",
-            zoom=5,
-            center=dict(lat=centre_lat, lon=centre_lon),
+    # Create an interactive scatter map using Plotly
+    map = px.scatter_map(
+        database_df,
+        lat="latitude",  # Column specifying latitude
+        lon="longitude",  # Column specifying longitude
+        color=colour_by,  # Column specifying marker color
+        hover_name=database_df["record_name"],
+        zoom=5,
+        size="size",  # Marker size
+        center={"lat": centre_lat, "lon": centre_lon},  # Map center
+        hover_data=OrderedDict(
+            [  # Used to order the items in hover data (but lat and long are always first)
+                ("deepest_depth (m)", ":.2f"),
+                ("Vs30 (m/s)", True),
+                ("Vs30_log_resid", True),
+                ("size", False),
+                ("vs30", False),
+                ("vs30_log_residual", False),
+            ]
         ),
-        margin={"r": 0, "t": 0, "l": 0, "b": 0},
-        showlegend=True,
-        legend_title_text="Legend",
     )
+
+    # Determine which GeoNet DataFrame to use for plotting based on session state
+    if show_geonet_visibility == 'on':
+        plot_geonet_df = geonet_stations_df
+    else:
+        plot_geonet_df = pd.DataFrame(columns=['lon', 'lat', 'name']) 
 
     geonet_fig = px.scatter_map(
-    geonet_stations_df,
-    lat="lat",
-    lon="lon",
-    hover_name="name",
+        plot_geonet_df,  # Use plot_geonet_df which might be empty
+        lat="lat",
+        lon="lon",
+        hover_name="name",
     )
 
+    # Add GeoNet station traces to the main map figure if they exist
+    # px.scatter_map with an empty DataFrame will result in an empty geonet_fig.data
     for trace in geonet_fig.data:
         trace.name = "GeoNet station"
         trace.showlegend = True
-
-    for trace in geonet_fig.data:
         map.add_trace(trace)
 
-    map_text = ("Click investigation markers for details.<br>"                
-               "Investigation marker size is Vs30<br>"
-               "residual with Foster et al. (2019).")
+    map_text = (
+        "Click investigation markers for details.<br>"
+        "Investigation marker size is Vs30<br>"
+        "residual with Foster et al. (2019)."
+    )
 
     map.update_layout(
-    legend_title_text=map_text,
-    legend=dict(
-        x=0.01,
-        y=0.99,    
-    ),
+        legend_title_text=map_text,
+        legend=dict(
+            x=0.01,
+            y=0.99,
+        ),
     )
 
     # Create an interactive histogram using Plotly
     if not database_df.empty and hist_by in database_df.columns:
         hist_plot = px.histogram(database_df, x=hist_by)
+        hist_description_text = (
+            f"Histogram of {hist_by}, showing {len(database_df)} records"
+        )
+        # If plotting the vs30_log_residual, add a note about the log residual calculation
+        if hist_by == "vs30_log_residual":
+            residual_description_text = r"""Note: Vs30 residuals are given by \\(\\mathrm{\\log(SPT_{Vs30}) - \\log(Foster2019_{Vs30})} \\)"""
+        else:
+            residual_description_text = ""
     else:
         hist_plot = go.Figure().update_layout(
             title_text=f"No data for {hist_by}", xaxis_title=hist_by
         )
+        hist_description_text = f"No data available to plot for {hist_by}."
+        residual_description_text = ""
 
     col_names_to_display = [
         "record_name",
@@ -377,18 +316,10 @@ def index():
     return flask.render_template(
         "views/index.html",
         date_of_last_nzgd_retrieval=date_of_last_nzgd_retrieval,
-        map=map_fig.to_html(  # Use map_fig here
+        map=map.to_html(
             full_html=False,  # Embed only the necessary map HTML
             include_plotlyjs=False,  # Exclude Plotly.js library (assume it's loaded separately)
-            default_height="70vh",  # Set the map height for the new layout
-            config={
-                "scrollZoom": True,  # Enable scroll zoom in the HTML config too
-                "displayModeBar": True,  # Display the mode bar with additional controls
-                "modeBarButtonsToAdd": [
-                    "zoomIn",
-                    "zoomOut",
-                ],  # Add explicit zoom buttons
-            },
+            default_height="90vh",  # Set the map height
         ),
         selected_vs30_correlation=vs30_correlation,  # Pass the selected vs30_correlation for the template
         selected_spt_vs_correlation=spt_vs_correlation,
@@ -421,9 +352,12 @@ def index():
         hist_plot=hist_plot.to_html(
             full_html=False,  # Embed only the necessary map HTML
             include_plotlyjs=False,  # Exclude Plotly.js library (assume it's loaded separately)
-            default_height="50vh",  # Reduced height to fit side-by-side with form
         ),
+        marker_size_description_text=marker_size_description_text,
+        hist_description_text=hist_description_text,
+        residual_description_text=residual_description_text,
         col_names_to_display=col_names_to_display_str,
+        show_geonet_visibility=show_geonet_visibility, # Pass new session-based variable
     )
 
 
@@ -851,7 +785,6 @@ def query_help():
         "vs30_log_residual",
         "gwl_residual",
         "spt_efficiency",
-        "spt_borehole_diameter",
     ]
     col_names_to_display_str = ", ".join(col_names_to_display)
 
@@ -945,14 +878,31 @@ def upload_geonet():
 
 @bp.route("/clear_geonet", methods=["POST"])
 def clear_geonet():
-    """Remove the user's uploaded GeoNet file."""
-    if "user_geonet_file" in flask.session:
-        # Delete the file if it exists
-        file_path = Path(UPLOAD_FOLDER) / flask.session["user_geonet_file"]
-        if file_path.exists():
-            os.remove(file_path)
+    """Clear the user's uploaded GeoNet file from the session and delete the temp file."""
+    user_geonet_file_path = get_user_geonet_file_path()
+    if user_geonet_file_path:
+        remove_file(user_geonet_file_path)  # Delete the actual file
+        flask.session.pop("user_geonet_file", None)  # Remove from session
+        flask.current_app.logger.info(
+            f"User GeoNet station file {user_geonet_file_path} cleared and removed."
+        )
+    return flask.redirect(flask.url_for("views.index"))
 
-        # Remove from session
-        del flask.session["user_geonet_file"]
 
-    return flask.redirect(flask.request.referrer)
+@bp.route("/toggle_geonet_visibility", methods=["POST"])
+def toggle_geonet_visibility():
+    """Toggle the visibility state of GeoNet stations in the session."""
+    current_state = flask.session.get('show_geonet_stations', 'on')
+    if current_state == 'on':
+        flask.session['show_geonet_stations'] = 'off'
+        flask.current_app.logger.info("GeoNet stations visibility set to OFF in session.")
+    else:
+        flask.session['show_geonet_stations'] = 'on'
+        flask.current_app.logger.info("GeoNet stations visibility set to ON in session.")
+    # Preserve query parameters when redirecting
+    # This ensures that filters and other states are not lost
+    # However, for simplicity and consistency with other POST actions like clear_geonet,
+    # we will redirect without preserving query params for now.
+    # If preserving params is needed, one would typically capture flask.request.args
+    # before the session change and rebuild the URL for redirection.
+    return flask.redirect(flask.url_for("views.index"))

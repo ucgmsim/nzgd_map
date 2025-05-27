@@ -19,32 +19,6 @@
         <p><a href="{{ url_for('views.query_help') }}" target="_blank" class="help-link">Need help with queries? Click
                 here
                 for examples and syntax</a></p>
-
-        <div class="geonet-upload-section">
-            <h4>GeoNet Station Data</h4>
-            <p>You can upload a custom GeoNet station file to replace the default one:</p>
-
-            <div class="geonet-actions">
-                <form action="{{ url_for('views.upload_geonet') }}" method="post" enctype="multipart/form-data"
-                    class="upload-form">
-                    <div class="file-input-wrapper">
-                        <input type="file" name="geonet_file" id="geonet_file" accept=".txt,.ll,.csv" />
-                        <button type="submit" class="file-submit-btn">Upload GeoNet Station File</button>
-                    </div>
-                    {% if session.get('user_geonet_file') %}
-                    <span class="file-status">✓ Custom file loaded</span>
-                    {% else %}
-                    <span class="file-status">Using default file</span>
-                    {% endif %}
-                </form>
-
-                {% if session.get('user_geonet_file') %}
-                <form action="{{ url_for('views.clear_geonet') }}" method="post" class="clear-form">
-                    <button type="submit" class="clear-btn">Reset to Default File</button>
-                </form>
-                {% endif %}
-            </div>
-        </div>
     </section>
 
     <!-- Top row with form and histogram side by side -->
@@ -127,18 +101,59 @@
         </div>
     </div>
 
+    <div class="geonet-upload-section">
+        <div class="geonet-form-container">
+            <form action="{{ url_for('views.upload_geonet') }}" method="post" enctype="multipart/form-data"
+                id="geonet-upload-form">
+                <input type="file" name="geonet_file" id="geonet_file_input" accept=".txt,.ll,.csv"
+                    style="display: none;" onchange="document.getElementById('geonet-upload-form').submit()">
+                <button type="button" onclick="document.getElementById('geonet_file_input').click()"
+                    class="file-submit-btn">UPLOAD CUSTOM GEONET STATION FILE</button>
+            </form>
+            {% if session.get('user_geonet_file') %}
+            <div style="margin-top: 5px;">
+                <span class="file-status">✓ Custom file loaded</span>
+                <form action="{{ url_for('views.clear_geonet') }}" method="post" id="clear-geonet-form"
+                    style="margin-top: 5px;">
+                    <button type="submit" class="clear-btn">Reset to Default File</button>
+                </form>
+            </div>
+            {% else %}
+            <div style="margin-top: 5px;">
+                <span class="file-status">Using default file</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <form action="{{ url_for('views.toggle_geonet_visibility') }}" method="post" id="toggle-geonet-form"
+            class="geonet-form-container" style="margin-left: 10px;">
+            <button type="submit" id="toggle-geonet-btn" class="toggle-geonet-btn">
+                {{ 'HIDE' if show_geonet_visibility == 'on' else 'SHOW' }} GEONET STATIONS
+            </button>
+        </form>
+    </div>
+
     <!-- Bottom row: Map spanning full width -->
     <div class="map-row">
-        <section role="figure">
+        <section role="figure" id="map-plot-section">
             {{map | safe}}
             <!-- Render the Plotly map as raw HTML. 'safe' prevents auto-escaping of HTML content -->
             <script>
+                var mapSection = document.getElementById("map-plot-section");
                 var plot_element =
-                    document.getElementsByClassName("plotly-graph-div")[0];
+                    mapSection.getElementsByClassName("plotly-graph-div")[0];
                 plot_element.on("plotly_click", function (data) {
                     {
                         var point = data.points[0];
                         if (point) {
+                            // Check if the clicked point belongs to the GeoNet station trace
+                            // This relies on the name given to the trace in views.py
+                            if (point.curveNumber < plot_element.data.length && plot_element.data[point.curveNumber].name === 'GeoNet station') {
+                                // Optionally, handle clicks on GeoNet stations differently or do nothing
+                                console.log("Clicked on a GeoNet station: ", point.hovertext);
+                                return; // Do not open a new window for GeoNet stations
+                            }
+
                             if (point.hovertext.startsWith("BH")) {
                                 window.open(`{{url_for('views.spt_record', record_name='')}}/${point.hovertext}`, '_blank', 'noopener,noreferrer');
                             }
@@ -148,6 +163,8 @@
                         }
                     }
                 });
+
+                // Removed the previous JavaScript for toggle-geonet-btn as it's now a form submission
             </script>
         </section>
     </div>

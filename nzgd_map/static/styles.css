@@ -150,6 +150,24 @@ form {
     color: #28a745;
 }
 
+.geonet-form-container {
+    display: flex;
+    flex-direction: row;
+    /* Align items horizontally */
+    align-items: center;
+    /* Vertically align items in the middle */
+    gap: 10px;
+    /* Space between items */
+    flex-wrap: wrap;
+    /* Allow items to wrap to the next line on smaller screens */
+}
+
+/* Ensure buttons and status message have consistent vertical alignment and spacing */
+.geonet-form-container>* {
+    margin-bottom: 0;
+    /* Remove default bottom margin from form elements if any */
+}
+
 .geonet-actions {
     display: flex;
     align-items: center;
@@ -182,6 +200,21 @@ form {
 
 .file-submit-btn:hover {
     background-color: #218838;
+}
+
+.toggle-geonet-btn {
+    background-color: #17a2b8;
+    /* A different color for distinction */
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.toggle-geonet-btn:hover {
+    background-color: #138496;
 }
 
 .clear-btn {
@@ -257,7 +290,6 @@ form {
     }
 }
 
-/* Style adjustments for the histogram in the new layout */
 .histogram-container {
     height: 100%;
     display: flex;
@@ -268,13 +300,12 @@ form {
     margin-top: 0;
 }
 
-/* Make plotly elements fit their containers better */
 .js-plotly-plot,
 .plot-container {
     width: 100%;
+    height: 100%;
 }
 
-/* Record count display */
 .record-count {
     margin: 10px 0 10px 10px;
     font-weight: bold;
