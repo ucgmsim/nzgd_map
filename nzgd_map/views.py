@@ -250,6 +250,19 @@ def index():
         trace.showlegend = True
         map.add_trace(trace)
 
+    # Determine if any legend items are expected
+    if show_geonet_visibility == 'off':
+        # GeoNet stations are not visible so we don't expect legend items from them.
+        # Add a dummy trace to ensure the legend box (and its title) appears.
+        map.add_trace(go.Scatter(
+            x=[None], y=[None],  # No actual data points
+            mode='markers',
+            marker=dict(color='rgba(0,0,0,0)', size=0),  # Make it invisible
+            showlegend=True, 
+            name=' ',  # Use a space as the name to ensure legend item is created
+            hoverinfo='none' # No hover interaction for this dummy point
+        ))
+
     map_text = (
         "Click investigation markers for details.<br>"
         "Investigation marker size is Vs30<br>"
