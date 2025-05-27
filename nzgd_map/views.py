@@ -176,7 +176,6 @@ def index():
         .abs()
         .fillna(round(database_df["vs30_log_residual"].abs().median(), 1))
     )
-    marker_size_description_text = r"""Marker size indicates the magnitude of the Vs30 log residual, given by \\\\(\\\\mathrm{|(\\\\log(SPT_{Vs30}) - \\\\log(Foster2019_{Vs30})|)}\\\\)"""
 
     ## Make new columns of string values to display instead of the float values for Vs30 and log residual
     ## so that an explanation can be shown when the vs30 value or the log residual
@@ -268,49 +267,11 @@ def index():
     # Create an interactive histogram using Plotly
     if not database_df.empty and hist_by in database_df.columns:
         hist_plot = px.histogram(database_df, x=hist_by)
-        hist_description_text = (
-            f"Histogram of {hist_by}, showing {len(database_df)} records"
-        )
-        # If plotting the vs30_log_residual, add a note about the log residual calculation
-        if hist_by == "vs30_log_residual":
-            residual_description_text = r"""Note: Vs30 residuals are given by \\(\\mathrm{\\log(SPT_{Vs30}) - \\log(Foster2019_{Vs30})} \\)"""
-        else:
-            residual_description_text = ""
+
     else:
         hist_plot = go.Figure().update_layout(
             title_text=f"No data for {hist_by}", xaxis_title=hist_by
         )
-        hist_description_text = f"No data available to plot for {hist_by}."
-        residual_description_text = ""
-
-    col_names_to_display = [
-        "record_name",
-        "nzgd_id",
-        "cpt_id",
-        "vs30",
-        "vs30_stddev",
-        "type_prefix",
-        "original_reference",
-        "investigation_date",
-        "published_date",
-        "latitude",
-        "longitude",
-        "model_vs30_foster_2019",
-        "model_vs30_stddev_foster_2019",
-        "model_gwl_westerhoff_2019",
-        "cpt_tip_net_area_ratio",
-        "measured_gwl",
-        "deepest_depth",
-        "shallowest_depth",
-        "region",
-        "district",
-        "suburb",
-        "city",
-        "vs30_log_residual",
-        "gwl_residual",
-        "spt_efficiency",
-    ]
-    col_names_to_display_str = ", ".join(col_names_to_display)
 
     # Render the map and data in an HTML template
     return flask.render_template(
@@ -353,10 +314,6 @@ def index():
             full_html=False,  # Embed only the necessary map HTML
             include_plotlyjs=False,  # Exclude Plotly.js library (assume it's loaded separately)
         ),
-        marker_size_description_text=marker_size_description_text,
-        hist_description_text=hist_description_text,
-        residual_description_text=residual_description_text,
-        col_names_to_display=col_names_to_display_str,
         show_geonet_visibility=show_geonet_visibility, # Pass new session-based variable
     )
 
@@ -758,7 +715,6 @@ def query_help():
         city_names = query_sqlite_db.get_city_names(conn)
         suburb_names = query_sqlite_db.get_suburb_names(conn)
 
-    # Get column names to display on the query help page
     col_names_to_display = [
         "record_name",
         "nzgd_id",
