@@ -116,8 +116,12 @@ GitHub. To build the Docker container image, open a terminal and navigate to the
 `docker` directory in the `nzgd_map` repo 
   * `cd /location/of/repo/docker/folder`
 
-The build process will try to re-use cached `nzgd_map` files by default, so if the `nzgd_map` package has been modified, you should build with the `--no-cache` flag:
+This Flask app uses a secret key to securely manage the session. The secret key is 
+passed as a build-time argument, to avoid hard coding it in the Dockerfile.  The build 
+process will try to re-use cached `nzgd_map` files by default, so if the `nzgd_map` 
+package has been modified, you should build with the `--no-cache` flag:
  * `docker build --no-cache -t earthquakesuc/nzgd_map .` 
+ * `docker build --build-arg SECRET_KEY="EXAMPLE" --no-cache -t earthquakesuc/nzgd_map .`
 
  (If you can keep cached files, remove the `--no-cache` flag from the command)
 
