@@ -9,7 +9,9 @@ def create_app(test_config: Any = None):
     """Build a flask app for serving."""
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
-    app.secret_key = os.urandom(24)  # Add this line to set the secret key
+    app.secret_key = os.getenv("SECRET_KEY")
+    if not app.secret_key:
+        raise RuntimeError("SECRET_KEY environment variable is not set. Please configure it for production.")
     app_path = Path(app.instance_path)
 
     if test_config is None:
