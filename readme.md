@@ -2,7 +2,7 @@
 
 This repository contains the source code for the `nzgd_map` package. This is a web application
 that enables access to analysis-ready data products derived from data hosted on the [New Zealand Geotechnical 
-Database (NZGD)](https://identity.beca.digital/identity.beca.digital/b2c_1a_beyon_nzgd_signup_signin/oauth2/v2.0/authorize?client_id=7c5e7680-f453-486a-92cd-7738c1fb5e72&scope=https%3A%2F%2Fidentity.beca.digital%2Fbeyon%2Fconsumer%20openid%20profile%20offline_access&redirect_uri=https%3A%2F%2Fnzgd.org.nz%2F&client-request-id=a86ce44b-1aae-40f9-9c1c-d2e646a00af8&response_mode=fragment&response_type=code&x-client-SKU=msal.js.browser&x-client-VER=2.30.0&client_info=1&code_challenge=R_Z8_0hCHOUe9MyS-sZUKbQ4JY_XA2RTinLrZ8ZSBcw&code_challenge_method=S256&prompt=login&nonce=dbb0e600-95c2-42bf-bf78-312917cb6938&state=eyJpZCI6ImEwNjVhYzQzLTBlNzAtNDE5Ni05OWUzLTVkMDcwNDc5M2M4MiIsIm1ldGEiOnsiaW50ZXJhY3Rpb25UeXBlIjoicmVkaXJlY3QifX0%3D). This repository also contains files for building a Docker image that can be used to run the
+Database (NZGD)](https://nzgd.org.nz/). This repository also contains files for building a Docker image that can be used to run the
 `nzgd_map` package in a containerized environment.
 
 ## Setting up the web app on `Mantle`
@@ -120,7 +120,6 @@ This Flask app uses a secret key to securely manage the session. The secret key 
 passed as a build-time argument, to avoid hard coding it in the Dockerfile.  The build 
 process will try to re-use cached `nzgd_map` files by default, so if the `nzgd_map` 
 package has been modified, you should build with the `--no-cache` flag:
- * `docker build --no-cache -t earthquakesuc/nzgd_map .` 
  * `docker build --build-arg SECRET_KEY="EXAMPLE" --no-cache -t earthquakesuc/nzgd_map .`
 
  (If you can keep cached files, remove the `--no-cache` flag from the command)
