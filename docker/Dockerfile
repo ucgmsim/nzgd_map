@@ -19,7 +19,8 @@ RUN chown -R nobody:nobody /usr/var/nzgd_map-instance
 
 # Installs the `nzgd_map` package directly from a GitHub repository without using the pip cache, 
 # ensuring the latest version for container deployment.
-RUN pip install --no-cache-dir "git+https://github.com/ucgmsim/nzgd_map#egg=nzgd_map" uwsgi  
+#RUN pip install --no-cache-dir "git+https://github.com/ucgmsim/nzgd_map@dev#egg=nzgd_map" uwsgi
+RUN pip install --no-cache-dir "git+https://github.com/ucgmsim/nzgd_map@improved-readme#egg=nzgd_map"
 
 # Copies the `nzgd.ini` configuration file from the build context into the container’s root directory.
 COPY nzgd.ini /nzgd.ini  
@@ -32,8 +33,13 @@ RUN chmod +x /start.sh
 
 # Copies the `nginx.conf` file from the build context into the container’s `/etc/nginx/` directory, 
 # replacing the default nginx configuration.
-COPY nginx.conf /etc/nginx/nginx.conf  
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Declare a build-time argument for the secret key
+ARG SECRET_KEY
+# Set the secret key environment variable from the build-time argument
+ENV SECRET_KEY=$SECRET_KEY
 
 # Sets the default command to run when the container starts; it executes the `start.sh` script, 
 # which starts nginx in the foreground.
-CMD /start.sh  
+CMD ["/start.sh"]
