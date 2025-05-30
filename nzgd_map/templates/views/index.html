@@ -38,8 +38,8 @@
     <div id="error"></div>
 
     <!-- Dropdown to select a vs30 correlation -->
-    <label id="query-label" for="vs30_correlation">Select a Vs-Vs30 correlation option</label>
-    <select id="query-input" name="vs30_correlation">
+    <label for="vs30-correlation-select">Select a Vs-Vs30 correlation option</label>
+    <select id="vs30-correlation-select" name="vs30_correlation">
         <!-- Populate dropdown options dynamically from the list of vs30_correlations -->
         {% for vs30_correlation_option in vs30_correlations %}
         <option value="{{vs30_correlation_option}}" {% if selected_vs30_correlation==vs30_correlation_option
@@ -51,8 +51,8 @@
 
 
     <!-- Dropdown to select a spt_vs_correlation -->
-    <label id="query-label_spt" for="spt_vs_correlation">Select a SPT-Vs correlation option</label>
-    <select id="query-input" name="spt_vs_correlation">
+    <label for="spt-correlation-select">Select a SPT-Vs correlation option</label>
+    <select id="spt-correlation-select" name="spt_vs_correlation">
         <!-- Populate dropdown options dynamically from the list of vs30_correlations -->
         {% for spt_vs_correlation_option in spt_vs_correlations %}
         <option value="{{spt_vs_correlation_option}}" {% if selected_spt_vs_correlation==spt_vs_correlation_option
@@ -63,8 +63,8 @@
     </select>
 
     <!-- Dropdown to select a cpt_vs_correlation -->
-    <label id="query-label_cpt" for="cpt_vs_correlation">Select a CPT-Vs correlation option</label>
-    <select id="query-input" name="cpt_vs_correlation">
+    <label for="cpt-correlation-select">Select a CPT-Vs correlation option</label>
+    <select id="cpt-correlation-select" name="cpt_vs_correlation">
         <!-- Populate dropdown options dynamically from the list of vs30_correlations -->
         {% for cpt_vs_correlation_option in cpt_vs_correlations %}
         <option value="{{cpt_vs_correlation_option}}" {% if selected_cpt_vs_correlation==cpt_vs_correlation_option
@@ -75,16 +75,16 @@
     </select>
 
     <!-- Dropdown to select a parameter to colour points by on the map -->
-    <label for="colour_by">Select a value to colour by</label>
-    <select id="query-colour" name="colour_by">
+    <label for="colour-by-select">Select a value to colour by</label>
+    <select id="colour-by-select" name="colour_by">
         {% for column, label in colour_variables %}
         <option value="{{column}}" {% if column==colour_by %}selected{% endif %}> {{label}}</option>
         {% endfor %}
     </select>
 
     <!-- Dropdown to select a parameter to plot as a histogram -->
-    <label id="hist-by-query" for="hist_by">Select a parameter to plot as a histogram</label>
-    <select id="hist-by-query" name="hist_by">
+    <label for="hist-by-select">Select a parameter to plot as a histogram</label>
+    <select id="hist-by-select" name="hist_by">
         <!-- Populate dropdown options dynamically from the list of colour_by options -->
         {% for column, label in colour_variables %}
         <option value="{{column}}" {% if column==hist_by %}selected{% endif %}> {{label}}</option>
@@ -92,11 +92,11 @@
     </select>
 
     <!-- File upload for CSV -->
-    <label for="csv_file">Upload CSV with latitude and longitude columns:</label>
-    <input type="file" id="csv_file" name="csv_file" accept=".csv">
+    <label for="csv-file-input">Upload CSV with latitude and longitude columns:</label>
+    <input type="file" id="csv-file-input" name="csv_file" accept=".csv">
 
     <!-- Submit button to trigger a search and/or file upload -->
-    <button id="query-button" type="submit">Update selection / Upload CSV</button>
+    <button id="submit-button" type="submit">Update selection / Upload CSV</button>
 </form>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
