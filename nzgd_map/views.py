@@ -163,8 +163,6 @@ def index():
     if query:
         database_df = database_df.query(query)
 
-    #########################################################################################
-
     # Calculate the center of the map for visualization
     centre_lat = database_df["latitude"].mean()
     centre_lon = database_df["longitude"].mean()
@@ -215,7 +213,7 @@ def index():
         lon="longitude",  # Column specifying longitude
         color=colour_by,  # Column specifying marker color
         hover_name=database_df["record_name"],
-        zoom=5,
+        zoom=4,
         size="size",  # Marker size
         center={"lat": centre_lat, "lon": centre_lon},  # Map center
         hover_data=OrderedDict(
