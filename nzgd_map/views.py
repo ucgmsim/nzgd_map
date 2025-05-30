@@ -13,9 +13,9 @@ from pathlib import Path
 
 import flask
 import numpy as np
-import pandas as pd  # Ensure pandas is imported
+import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go  # Add import for plotly.graph_objects
+import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from werkzeug.utils import secure_filename
 
@@ -234,7 +234,7 @@ def index():
     if show_geonet_visibility == 'on':
         plot_geonet_df = geonet_stations_df
     else:
-        plot_geonet_df = pd.DataFrame(columns=['lon', 'lat', 'name']) 
+        plot_geonet_df = pd.DataFrame(columns=['lon', 'lat', 'name'])
 
     geonet_fig = px.scatter_map(
         plot_geonet_df,  # Use plot_geonet_df which might be empty
@@ -258,7 +258,7 @@ def index():
             x=[None], y=[None],  # No actual data points
             mode='markers',
             marker=dict(color='rgba(0,0,0,0)', size=0),  # Make it invisible
-            showlegend=True, 
+            showlegend=True,
             name=' ',  # Use a space as the name to ensure legend item is created
             hoverinfo='none' # No hover interaction for this dummy point
         ))
@@ -293,7 +293,7 @@ def index():
         map=map.to_html(
             full_html=False,  # Embed only the necessary map HTML
             include_plotlyjs=False,  # Exclude Plotly.js library (assume it's loaded separately)
-            default_height="90vh",  # Set the map height
+            default_height="85vh",  # Set the map height
         ),
         selected_vs30_correlation=vs30_correlation,  # Pass the selected vs30_correlation for the template
         selected_spt_vs_correlation=spt_vs_correlation,

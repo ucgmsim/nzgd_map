@@ -2,14 +2,15 @@
 [Unit]
 
 # Provides a short description of the service as "NZGD Map Service".
-Description=NZGD Map Service
+Description=NZGD Map service
 
 # Starts the [Service] section, which controls how the service process executes and behaves.
 [Service]
 
-# Run the service as a user. <USER> is the username of the user that will run the service.
+# Run the service with the permissions of the nzgd_map user.
 User=nzgd_map
-# 1010 is the four digit User ID (UID) given by `id -u` when run as <USER> 
+
+# 1010 is the four digit User ID (UID) given by `id -u nzgd_map`
 Environment="DOCKER_HOST=unix:///run/user/1010/docker.sock"
 
 # Sets the start timeout to 0 seconds, meaning systemd will wait indefinitely for the service to start.
