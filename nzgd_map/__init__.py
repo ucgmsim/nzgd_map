@@ -14,6 +14,11 @@ def create_app(test_config: Any = None):
         raise RuntimeError("SECRET_KEY environment variable is not set. Please configure it for production.")
     app_path = Path(app.instance_path)
 
+    # Set a secret key for session management
+    app.config["SECRET_KEY"] = (
+        "dev-key-for-nzgd-map-app"  # In production, use a proper secret key
+    )
+
     if test_config is None:
         # load the instance config, if it exists, when not testing
         app.config.from_pyfile("config.py", silent=True)

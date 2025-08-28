@@ -12,30 +12,25 @@
 {% block title %} NZGD data {% endblock %}
 
 {% block content %}
-<section>
-    <h1>CPT and SPT data extracted from NZGD borehole records</h1>
-    <h4>Date of last update from NZGD: {{ date_of_last_nzgd_retrieval }}</h4>
-    <br>
-    <b>Available query fields:</b> {{ col_names_to_display }}
-    <br>
-    <br> <b> Example queries:</b>
-    <ul>
-        <li> (vs30 < 100) & (region=="Canterbury" ) [Show records where Vs30 is less than 100 m/s and the region is
-                Canterbury] </li>
-        <li> type_prefix == "X" [Show records of a particular type. X = "BH", "CPT", or "SCPT". Note that "BH"
-            (borehole) also covers SPT] </li>
-        <li> investigation_date > "2024-08-20" [Show records with date of investigation later than 20 August 2024] </li>
-    </ul>
-    <br>
+<div class="layout-container">
+    <section>
+        <h1>CPT and SPT data extracted from NZGD records</h1>
+        <h4>Date of last update from NZGD: {{ date_of_last_nzgd_retrieval }}</h4>
+        <p><a href="{{ url_for('views.query_help') }}" target="_blank" class="help-link">Need help with queries? Click
+                here
+                for examples and syntax</a></p>
+    </section>
 
-</section>
-
-<!-- Form to allow user input for filtering data and uploading CSV -->
-<form id="query-form" method="POST" action="{{url_for('views.index')}}" enctype="multipart/form-data">
-    <!-- Text input for a custom query, passed as the 'query' parameter in the URL -->
-    <input id="query-input" name="query" hx-get="/validate" hx-trigger="keyup delay:300ms changed" hx-target="#error"
-        placeholder="Input your pandas-compatible search query" value="{{query or ''}}" />
-    <div id="error"></div>
+    <!-- Top row with form and histogram side by side -->
+    <div class="top-row">
+        <!-- Left column: Query form -->
+        <div class="form-column">
+            <form id="query-form" method="GET" action="{{url_for('views.index')}}">
+                <!-- Text input for a custom query, passed as the 'query' parameter in the URL -->
+                <input id="query-input" name="query" hx-get="/validate" hx-trigger="keyup delay:300ms changed"
+                    hx-target="#error" placeholder="Input your pandas-compatible search query"
+                    value="{{query or ''}}" />
+                <div id="error"></div>
 
     <!-- Dropdown to select a vs30 correlation -->
     <label for="vs30-correlation-select">Select a Vs-Vs30 correlation option</label>
@@ -91,56 +86,89 @@
         {% endfor %}
     </select>
 
-    <!-- File upload for CSV -->
-    <label for="csv-file-input">Upload CSV with latitude and longitude columns:</label>
-    <input type="file" id="csv-file-input" name="csv_file" accept=".csv">
+                <!-- Record count display -->
+                <div class="record-count">Retrieved {{ num_records }} records</div>
 
-    <!-- Submit button to trigger a search and/or file upload -->
-    <button id="submit-button" type="submit">Update selection / Upload CSV</button>
-</form>
+                <!-- Submit button to trigger a search -->
+                <button id="query-button">Update selection</button>
+            </form>
+        </div>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-<ul class=flashes>
-    {% for category, message in messages %}
-    <li class="{{ category }}">{{ message }}</li>
-    {% endfor %}
-</ul>
-{% endif %}
-{% endwith %}
+        <!-- Right column: Histogram -->
+        <div class="histogram-column">
+            <div class="histogram-container">
+                {{hist_plot | safe}}
+            </div>
+        </div>
+    </div>
 
-<h4> Showing {{ num_records }} records </h4>
-<h5> {{ marker_size_description_text }} </h5>
-<!-- Section to render the Plotly map -->
-<section role="figure">
-    {{map | safe}}
-    <!-- Render the Plotly map as raw HTML. 'safe' prevents auto-escaping of HTML content -->
-    <script>
-        var plot_element =
-            document.getElementsByClassName("plotly-graph-div")[0];
-        plot_element.on("plotly_click", function (data) {
-            // data.points is an array of points clicked. We're interested in the first one.
-            if (data.points.length > 0) {
-                var point = data.points[0];
-                if (point) {
-                    if (point.hovertext.startsWith("BH")) {
-                        window.open(`{{url_for('views.spt_record', record_name='')}}/${point.hovertext}`, '_blank', 'noopener,noreferrer');
+    <div class="geonet-upload-section">
+        <div class="geonet-form-container">
+            <form action="{{ url_for('views.upload_geonet') }}" method="post" enctype="multipart/form-data"
+                id="geonet-upload-form">
+                <input type="file" name="geonet_file" id="geonet_file_input" accept=".txt,.ll,.csv"
+                    style="display: none;" onchange="document.getElementById('geonet-upload-form').submit()">
+                <button type="button" onclick="document.getElementById('geonet_file_input').click()"
+                    class="file-submit-btn">UPLOAD CUSTOM GEONET STATION FILE</button>
+            </form>
+            {% if session.get('user_geonet_file') %}
+            <div style="margin-top: 5px;">
+                <span class="file-status">✓ Custom file loaded</span>
+                <form action="{{ url_for('views.clear_geonet') }}" method="post" id="clear-geonet-form"
+                    style="margin-top: 5px;">
+                    <button type="submit" class="clear-btn">Reset to Default File</button>
+                </form>
+            </div>
+            {% else %}
+            <div style="margin-top: 5px;">
+                <span class="file-status">Using default file</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <form action="{{ url_for('views.toggle_geonet_visibility') }}" method="post" id="toggle-geonet-form"
+            class="geonet-form-container" style="margin-left: 10px;">
+            <button type="submit" id="toggle-geonet-btn" class="toggle-geonet-btn">
+                {{ 'HIDE' if show_geonet_visibility == 'on' else 'SHOW' }} GEONET STATIONS
+            </button>
+        </form>
+    </div>
+
+    <!-- Bottom row: Map spanning full width -->
+    <div class="map-row">
+        <section role="figure" id="map-plot-section">
+            {{map | safe}}
+            <!-- Render the Plotly map as raw HTML. 'safe' prevents auto-escaping of HTML content -->
+            <script>
+                var mapSection = document.getElementById("map-plot-section");
+                var plot_element =
+                    mapSection.getElementsByClassName("plotly-graph-div")[0];
+                plot_element.on("plotly_click", function (data) {
+                    {
+                        var point = data.points[0];
+                        if (point) {
+                            // Check if the clicked point belongs to the GeoNet station trace
+                            // This relies on the name given to the trace in views.py
+                            if (point.curveNumber < plot_element.data.length && plot_element.data[point.curveNumber].name === 'GeoNet station') {
+                                // Optionally, handle clicks on GeoNet stations differently or do nothing
+                                console.log("Clicked on a GeoNet station: ", point.hovertext);
+                                return; // Do not open a new window for GeoNet stations
+                            }
+
+                            if (point.hovertext.startsWith("BH")) {
+                                window.open(`{{url_for('views.spt_record', record_name='')}}/${point.hovertext}`, '_blank', 'noopener,noreferrer');
+                            }
+                            if (point.hovertext.startsWith("CPT") || point.hovertext.startsWith("SCPT")) {
+                                window.open(`{{url_for('views.cpt_record', record_name='')}}/${point.hovertext}`, '_blank', 'noopener,noreferrer');
+                            }
+                        }
                     }
-                    if (point.hovertext.startsWith("CPT") || point.hovertext.startsWith("SCPT")) {
-                        window.open(`{{url_for('views.cpt_record', record_name='')}}/${point.hovertext}`, '_blank', 'noopener,noreferrer');
-                    }
-                }
-            }
-        });
-    </script>
-</section>
+                });
 
-<h4>{{ hist_description_text }}</h4>
-<h4>{{ residual_description_text }}</h4>
-
-<section role="figure">
-    {{hist_plot | safe}}
-    <!-- Render the Plotly map as raw HTML. 'safe' prevents auto-escaping of HTML content -->
-</section>
+                // Removed the previous JavaScript for toggle-geonet-btn as it's now a form submission
+            </script>
+        </section>
+    </div>
+</div>
 
 {% endblock %}

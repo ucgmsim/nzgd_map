@@ -10,7 +10,7 @@ Description=NZGD Map service
 # Run the service with the permissions of the nzgd_map user.
 User=nzgd_map
 
-# 1010 is the four digit User ID (UID) given by `id -u nzgd_map` 
+# 1010 is the four digit User ID (UID) given by `id -u nzgd_map`
 Environment="DOCKER_HOST=unix:///run/user/1010/docker.sock"
 
 # Sets the start timeout to 0 seconds, meaning systemd will wait indefinitely for the service to start.
