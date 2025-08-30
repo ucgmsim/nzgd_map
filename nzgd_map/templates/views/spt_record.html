@@ -8,9 +8,9 @@
 <h1> Overview of {{ record_details[0]["record_name"] }} </h1>
 
 <a href="{{ url_str }}"> Download NZGD source files </a> <br>
-<a href="{{ url_for('views.download_spt_data', filename=record_details[0][" record_name"] + '_data.csv' ) }}">Download
+<a href="{{ url_for('views.download_spt_data', filename=record_details[0]['record_name'] + '_data.csv' ) }}">Download
     extracted data</a><br>
-<a href="{{ url_for('views.download_spt_soil_types', filename=record_details[0][" record_name"] + '_soil_types.csv' )
+<a href="{{ url_for('views.download_spt_soil_types', filename=record_details[0]['record_name'] + '_soil_types.csv' )
     }}">Download extracted soil types</a>
 
 {{ spt_plot | safe }}
