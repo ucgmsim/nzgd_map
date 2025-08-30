@@ -367,6 +367,8 @@ def spt_record(record_name: str):
         spt_soil_df = query_sqlite_db.spt_soil_types_for_one_nzgd(nzgd_id, conn)
         vs30s_df = query_sqlite_db.spt_vs30s_for_one_nzgd_id(nzgd_id, conn)
 
+    vs30s_df["record_name"] = "BH_" + vs30s_df["nzgd_id"].astype(str)
+
     type_prefix_to_folder = {"CPT": "cpt", "SCPT": "scpt", "BH": "borehole"}
 
     path_to_files = (
@@ -490,6 +492,8 @@ def cpt_record(record_name: str):
             nzgd_id, conn
         )
         vs30s_df = query_sqlite_db.cpt_vs30s_for_one_nzgd_id(nzgd_id, conn)
+
+    vs30s_df["record_name"] = "CPT_" + vs30s_df["nzgd_id"].astype(str)
 
     type_prefix_to_folder = {"CPT": "cpt", "SCPT": "scpt", "BH": "borehole"}
     path_to_files = (
@@ -634,6 +638,9 @@ def download_cpt_data(filename):
         cpt_measurements_df = query_sqlite_db.cpt_measurements_for_one_nzgd(
             nzgd_id, conn
         )
+    cpt_measurements_df["record_name"] = "CPT_" + cpt_measurements_df["nzgd_id"].astype(
+        str
+    )
 
     cpt_measurements_df.rename(
         columns={
@@ -674,6 +681,10 @@ def download_spt_data(filename):
             nzgd_id, conn
         )
 
+    spt_measurements_df["record_name"] = "BH_" + spt_measurements_df["nzgd_id"].astype(
+        str
+    )
+
     # Create a buffer for the CSV data
     download_buffer = StringIO()
 
@@ -701,7 +712,7 @@ def download_spt_soil_types(filename):
     nzgd_id = int(filename.split("_")[1])
     with sqlite3.connect(instance_path / constants.database_file_name) as conn:
         spt_soil_types_df = query_sqlite_db.spt_soil_types_for_one_nzgd(nzgd_id, conn)
-
+    spt_soil_types_df["record_name"] = "BH_" + spt_soil_types_df["nzgd_id"].astype(str)
     spt_soil_types_df.rename(
         columns={"top_depth": "depth_at_layer_top_m"}, inplace=True
     )
