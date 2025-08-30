@@ -519,6 +519,24 @@ def cpt_record(record_name: str):
     elif isinstance(extracted_gwl, float):
         extracted_gwl = f"{extracted_gwl:.2f}"
 
+    # New: ground_water_level_method
+    ground_water_level_method = (
+        vs30s_df["ground_water_level_method"][0]
+        if "ground_water_level_method" in vs30s_df.columns
+        else None
+    )
+    if ground_water_level_method is None:
+        ground_water_level_method = "Not available"
+
+    # New: termination_reason
+    termination_reason = (
+        vs30s_df["termination_reason"][0]
+        if "termination_reason" in vs30s_df.columns
+        else None
+    )
+    if termination_reason is None:
+        termination_reason = "Not available"
+
     model_gwl_westerhoff_2018 = vs30s_df["model_gwl_westerhoff_2018"][0]
     if model_gwl_westerhoff_2018 is None:
         model_gwl_westerhoff_2018 = "Not available"
@@ -611,6 +629,8 @@ def cpt_record(record_name: str):
         url_str=url_str,
         tip_net_area_ratio=tip_net_area_ratio,
         extracted_gwl=extracted_gwl,
+        ground_water_level_method=ground_water_level_method,
+        termination_reason=termination_reason,
         model_gwl_westerhoff_2018=model_gwl_westerhoff_2018,
         record_name=record_name,
         model_vs30_foster_2019=model_vs30_foster_2019,
