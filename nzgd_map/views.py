@@ -101,6 +101,10 @@ def index():
             conn=conn,
         )
 
+    database_df["record_name"] = (
+        database_df["type_prefix"] + "_" + database_df["nzgd_id"].astype(str)
+    )
+
     # Determine GeoNet stations data: user-uploaded or default
     user_geonet_file_path = (
         get_user_geonet_file_path()
