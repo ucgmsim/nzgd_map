@@ -529,7 +529,6 @@ def cpt_vs30s_for_one_nzgd_id(
     cptvs30estimates.nzgd_id,
     cptvs30estimates.vs30,
     cptvs30estimates.vs30_stddev, 
-    cptreport.cpt_file,
     cptreport.tip_net_area_ratio,
     cptreport.extracted_gwl,
     cptreport.deepest_depth,
