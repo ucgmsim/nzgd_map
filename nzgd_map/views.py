@@ -322,7 +322,7 @@ def index():
                 "Vs30 standard deviation from Foster et al. (2019)",
             ),
             ("shallowest_depth", "Record's shallowest depth"),
-            ("measured_gwl", "Measured groundwater level"),
+            ("extracted_gwl", "Measured groundwater level"),
             (
                 "model_gwl_westerhoff_2018",
                 "Groundwater level from Westerhoff et al. (2019)",
@@ -388,11 +388,11 @@ def spt_record(record_name: str):
     elif isinstance(spt_borehole_diameter, float):
         spt_borehole_diameter = f"{spt_borehole_diameter:.2f}"
 
-    measured_gwl = vs30s_df["measured_gwl"][0]
-    if measured_gwl is None:
-        measured_gwl = "Not available"
-    elif isinstance(measured_gwl, float):
-        measured_gwl = f"{measured_gwl:.2f}"
+    extracted_gwl = vs30s_df["extracted_gwl"][0]
+    if extracted_gwl is None:
+        extracted_gwl = "Not available"
+    elif isinstance(extracted_gwl, float):
+        extracted_gwl = f"{extracted_gwl:.2f}"
 
     model_gwl_westerhoff_2018 = vs30s_df["model_gwl_westerhoff_2018"][0]
     if model_gwl_westerhoff_2018 is None:
@@ -450,7 +450,7 @@ def spt_record(record_name: str):
         url_str=url_str,
         spt_efficiency=spt_efficiency,
         spt_borehole_diameter=spt_borehole_diameter,
-        measured_gwl=measured_gwl,
+        extracted_gwl=extracted_gwl,
         model_vs30_foster_2019=model_vs30_foster_2019,
         model_vs30_stddev_foster_2019=model_vs30_stddev_foster_2019,
         model_gwl_westerhoff_2018=model_gwl_westerhoff_2018,
@@ -505,11 +505,11 @@ def cpt_record(record_name: str):
     elif isinstance(tip_net_area_ratio, float):
         tip_net_area_ratio = f"{tip_net_area_ratio:.2f}"
 
-    measured_gwl = vs30s_df["measured_gwl"][0]
-    if measured_gwl is None:
-        measured_gwl = "Not available"
-    elif isinstance(measured_gwl, float):
-        measured_gwl = f"{measured_gwl:.2f}"
+    extracted_gwl = vs30s_df["extracted_gwl"][0]
+    if extracted_gwl is None:
+        extracted_gwl = "Not available"
+    elif isinstance(extracted_gwl, float):
+        extracted_gwl = f"{extracted_gwl:.2f}"
 
     model_gwl_westerhoff_2018 = vs30s_df["model_gwl_westerhoff_2018"][0]
     if model_gwl_westerhoff_2018 is None:
@@ -602,7 +602,7 @@ def cpt_record(record_name: str):
         show_vs30_values=show_vs30_values,
         url_str=url_str,
         tip_net_area_ratio=tip_net_area_ratio,
-        measured_gwl=measured_gwl,
+        extracted_gwl=extracted_gwl,
         model_gwl_westerhoff_2018=model_gwl_westerhoff_2018,
         record_name=record_name,
         model_vs30_foster_2019=model_vs30_foster_2019,
@@ -749,7 +749,7 @@ def query_help():
         "model_vs30_stddev_foster_2019",
         "model_gwl_westerhoff_2018",
         "cpt_tip_net_area_ratio",
-        "measured_gwl",
+        "extracted_gwl",
         "deepest_depth",
         "shallowest_depth",
         "region",
@@ -798,7 +798,7 @@ def validate():
             "model_vs30_stddev_foster_2019",
             "model_gwl_westerhoff_2018",
             "cpt_tip_net_area_ratio",
-            "measured_gwl",
+            "extracted_gwl",
             "deepest_depth",
             "shallowest_depth",
             "region",
