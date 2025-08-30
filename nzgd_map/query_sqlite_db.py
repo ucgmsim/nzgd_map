@@ -510,68 +510,58 @@ def cpt_vs30s_for_one_nzgd_id(
     Extracts Vs30 values for a given CPT ID from the SQLite database.
     Note that multiple CPT investigations (with different cpt_ids) can be returned,
     as some NZGD records contain multiple CPT investigations.
-
-    Parameters
-    ----------
-    selected_nzgd_id : int
-        The selected NZGD ID.
-    conn : sqlite3.Connection
-        The SQLite database connection.
-
-    Returns
-    -------
-    pd.DataFrame
-        A DataFrame containing the Vs30 values and related metadata.
     """
 
-    query = """SELECT 
-    cptvs30estimates.cpt_id,
-    cptvs30estimates.nzgd_id,
-    cptvs30estimates.vs30,
-    cptvs30estimates.vs30_stddev, 
-    cptreport.tip_net_area_ratio,
-    cptreport.extracted_gwl,
-    cptreport.deepest_depth,
-    cptreport.shallowest_depth,   
-    cpttovscorrelation.name AS cpt_to_vs_correlation,
-    vstovs30correlation.name AS vs_to_vs30_correlation,
-    nzgdrecord.type_prefix,    
-    nzgdrecord.original_reference,
-    nzgdrecord.investigation_date,
-    nzgdrecord.published_date,
-    nzgdrecord.latitude,
-    nzgdrecord.longitude,
-    nzgdrecord.model_vs30_foster_2019,
-    nzgdrecord.model_vs30_stddev_foster_2019,
-    nzgdrecord.model_gwl_westerhoff_2018,
-    region.name AS region,
-    district.name AS district,
-    city.name AS city,
-    suburb.name AS suburb,
-    groundwaterlevelmethod.name AS ground_water_level_method,
-    terminationreason.name AS termination_reason
-    FROM cptvs30estimates
-    JOIN cpttovscorrelation 
-        ON cptvs30estimates.cpt_to_vs_correlation_id = cpttovscorrelation.cpt_to_vs_correlation_id
-    JOIN vstovs30correlation 
-        ON cptvs30estimates.vs_to_vs30_correlation_id = vstovs30correlation.vs_to_vs30_correlation_id
-    JOIN cptreport
-        ON cptvs30estimates.cpt_id = cptreport.cpt_id
-    JOIN nzgdrecord
-        ON cptvs30estimates.nzgd_id = nzgdrecord.nzgd_id
-    JOIN region
-            ON nzgdrecord.region_id = region.region_id
-    JOIN district
-            ON nzgdrecord.district_id = district.district_id
-    JOIN suburb
-            ON nzgdrecord.suburb_id = suburb.suburb_id
-    JOIN city
-            ON nzgdrecord.city_id = city.city_id
-    LEFT JOIN groundwaterlevelmethod
-            ON cptreport.gwl_method_id = groundwaterlevelmethod.id
-    LEFT JOIN terminationreason
-            ON cptreport.termination_reason_id = terminationreason.id
-    WHERE cptvs30estimates.nzgd_id = ?;"""
+    query = (
+        "SELECT "
+        "cptvs30estimates.cpt_id, "
+        "cptvs30estimates.nzgd_id, "
+        "cptvs30estimates.vs30, "
+        "cptvs30estimates.vs30_stddev, "
+        "cptreport.tip_net_area_ratio, "
+        "cptreport.extracted_gwl, "
+        "cptreport.deepest_depth, "
+        "cptreport.shallowest_depth, "
+        "cpttovscorrelation.name AS cpt_to_vs_correlation, "
+        "vstovs30correlation.name AS vs_to_vs30_correlation, "
+        "nzgdrecord.type_prefix, "
+        "nzgdrecord.original_reference, "
+        "nzgdrecord.investigation_date, "
+        "nzgdrecord.published_date, "
+        "nzgdrecord.latitude, "
+        "nzgdrecord.longitude, "
+        "nzgdrecord.model_vs30_foster_2019, "
+        "nzgdrecord.model_vs30_stddev_foster_2019, "
+        "nzgdrecord.model_gwl_westerhoff_2018, "
+        "region.name AS region, "
+        "district.name AS district, "
+        "city.name AS city, "
+        "suburb.name AS suburb, "
+        "groundwaterlevelmethod.name AS ground_water_level_method, "
+        "terminationreason.name AS termination_reason "
+        "FROM cptvs30estimates "
+        "JOIN cpttovscorrelation "
+        "ON cptvs30estimates.cpt_to_vs_correlation_id = cpttovscorrelation.cpt_to_vs_correlation_id "
+        "JOIN vstovs30correlation "
+        "ON cptvs30estimates.vs_to_vs30_correlation_id = vstovs30correlation.vs_to_vs30_correlation_id "
+        "JOIN cptreport "
+        "ON cptvs30estimates.cpt_id = cptreport.cpt_id "
+        "JOIN nzgdrecord "
+        "ON cptvs30estimates.nzgd_id = nzgdrecord.nzgd_id "
+        "JOIN region "
+        "ON nzgdrecord.region_id = region.region_id "
+        "JOIN district "
+        "ON nzgdrecord.district_id = district.district_id "
+        "JOIN suburb "
+        "ON nzgdrecord.suburb_id = suburb.suburb_id "
+        "JOIN city "
+        "ON nzgdrecord.city_id = city.city_id "
+        "LEFT JOIN groundwaterlevelmethod "
+        "ON cptreport.ground_water_level_method_id = groundwaterlevelmethod.ground_water_level_method_id "
+        "LEFT JOIN terminationreason "
+        "ON cptreport.termination_reason_id = terminationreason.termination_reason_id "
+        "WHERE cptvs30estimates.nzgd_id = ?;"
+    )
 
     t1 = time.time()
     cpt_vs30_df = pd.read_sql(query, conn, params=(selected_nzgd_id,))
