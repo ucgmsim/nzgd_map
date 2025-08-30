@@ -519,6 +519,19 @@ def cpt_record(record_name: str):
     elif isinstance(extracted_gwl, float):
         extracted_gwl = f"{extracted_gwl:.2f}"
 
+    # Calculate the GWL residual (extracted_gwl - model_gwl_westerhoff_2018)
+    gwl_residual = (
+        vs30s_df["gwl_residual"][0] if "gwl_residual" in vs30s_df.columns else None
+    )
+    if gwl_residual is None or (
+        isinstance(gwl_residual, float) and np.isnan(gwl_residual)
+    ):
+        extracted_gwl_minus_model_gwl = "Not available"
+    elif isinstance(gwl_residual, float):
+        extracted_gwl_minus_model_gwl = f"{gwl_residual:.2f}"
+    else:
+        extracted_gwl_minus_model_gwl = str(gwl_residual)
+
     # New: ground_water_level_method
     ground_water_level_method = (
         vs30s_df["ground_water_level_method"][0]
@@ -636,6 +649,7 @@ def cpt_record(record_name: str):
         model_vs30_foster_2019=model_vs30_foster_2019,
         model_vs30_stddev_foster_2019=model_vs30_stddev_foster_2019,
         type_prefix=type_prefix,
+        extracted_gwl_minus_model_gwl=extracted_gwl_minus_model_gwl,
     )
 
 
