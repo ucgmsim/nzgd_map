@@ -548,7 +548,7 @@ def cpt_vs30s_for_one_nzgd_id(
     district.name AS district,
     city.name AS city,
     suburb.name AS suburb,
-    groundwaterlevel.name AS ground_water_level_method,
+    groundwaterlevelmethod.name AS ground_water_level_method,
     terminationreason.name AS termination_reason
     FROM cptvs30estimates
     JOIN cpttovscorrelation 
@@ -567,8 +567,8 @@ def cpt_vs30s_for_one_nzgd_id(
             ON nzgdrecord.suburb_id = suburb.suburb_id
     JOIN city
             ON nzgdrecord.city_id = city.city_id
-    LEFT JOIN groundwaterlevel
-            ON cptreport.gwl_method_id = groundwaterlevel.id
+    LEFT JOIN groundwaterlevelmethod
+            ON cptreport.gwl_method_id = groundwaterlevelmethod.id
     LEFT JOIN terminationreason
             ON cptreport.termination_reason_id = terminationreason.id
     WHERE cptvs30estimates.nzgd_id = ?;"""
