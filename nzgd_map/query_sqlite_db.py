@@ -132,7 +132,7 @@ def all_vs30s_given_correlations(
         sf.cpt_id, sf.nzgd_id, sf.vs30, sf.vs30_stddev,
         n.type_prefix, n.original_reference, n.investigation_date, n.published_date,
         n.latitude, n.longitude, n.model_vs30_foster_2019, n.model_vs30_stddev_foster_2019,
-        n.model_gwl_westerhoff_2019, cr.tip_net_area_ratio, cr.measured_gwl,
+        n.model_gwl_westerhoff_2018, cr.tip_net_area_ratio, cr.measured_gwl,
         cr.deepest_depth, cr.shallowest_depth,
         r.name AS region_name,
         d.name AS district_name,
@@ -173,7 +173,7 @@ def all_vs30s_given_correlations(
         cpt_database_df["model_vs30_foster_2019"]
     )
     cpt_database_df["gwl_residual"] = (
-        cpt_database_df["measured_gwl"] - cpt_database_df["model_gwl_westerhoff_2019"]
+        cpt_database_df["measured_gwl"] - cpt_database_df["model_gwl_westerhoff_2018"]
     )
 
     # The SQLite query to extract the SPT data.
@@ -196,7 +196,7 @@ def all_vs30s_given_correlations(
         tf.spt_id, tf.vs30, tf.vs30_stddev,
         n.type_prefix, n.original_reference, n.investigation_date, n.published_date,
         n.latitude, n.longitude, n.model_vs30_foster_2019, n.model_vs30_stddev_foster_2019,
-        n.model_gwl_westerhoff_2019, sr.measured_gwl, sr.efficiency, sr.borehole_diameter,
+        n.model_gwl_westerhoff_2018, sr.measured_gwl, sr.efficiency, sr.borehole_diameter,
         r.name AS region_name,
         d.name AS district_name,
         sub.name AS suburb_name,
@@ -258,7 +258,7 @@ def all_vs30s_given_correlations(
         spt_database_df["model_vs30_foster_2019"]
     )
     spt_database_df["gwl_residual"] = (
-        spt_database_df["measured_gwl"] - spt_database_df["model_gwl_westerhoff_2019"]
+        spt_database_df["measured_gwl"] - spt_database_df["model_gwl_westerhoff_2018"]
     )
 
     print(f"Time to extract CPT Vs30s and metadata from SQLite: {t2 - t1:.2f} s")
@@ -544,7 +544,7 @@ def cpt_vs30s_for_one_nzgd_id(
     nzgdrecord.longitude,
     nzgdrecord.model_vs30_foster_2019,
     nzgdrecord.model_vs30_stddev_foster_2019,
-    nzgdrecord.model_gwl_westerhoff_2019,
+    nzgdrecord.model_gwl_westerhoff_2018,
     region.name AS region,
     district.name AS district,
     city.name AS city,
@@ -588,7 +588,7 @@ def cpt_vs30s_for_one_nzgd_id(
         cpt_vs30_df["vs30_log_residual"] = np.nan
 
     cpt_vs30_df["gwl_residual"] = (
-        cpt_vs30_df["measured_gwl"] - cpt_vs30_df["model_gwl_westerhoff_2019"]
+        cpt_vs30_df["measured_gwl"] - cpt_vs30_df["model_gwl_westerhoff_2018"]
     )
 
     # rename the columns to match the web app and add prefixes of cpt spt to columns that only
@@ -650,7 +650,7 @@ def spt_vs30s_for_one_nzgd_id(
     nzgdrecord.longitude,
     nzgdrecord.model_vs30_foster_2019,
     nzgdrecord.model_vs30_stddev_foster_2019,
-    nzgdrecord.model_gwl_westerhoff_2019,
+    nzgdrecord.model_gwl_westerhoff_2018,
     spttovs30hammertype.name AS hammer_type,
     region.name AS region,
     district.name AS district,
@@ -696,7 +696,7 @@ def spt_vs30s_for_one_nzgd_id(
         spt_vs30_df["model_vs30_foster_2019"]
     )
     spt_vs30_df["gwl_residual"] = (
-        spt_vs30_df["measured_gwl"] - spt_vs30_df["model_gwl_westerhoff_2019"]
+        spt_vs30_df["measured_gwl"] - spt_vs30_df["model_gwl_westerhoff_2018"]
     )
 
     t2 = time.time()

@@ -80,7 +80,7 @@ def index():
     query = flask.request.args.get("query", default=None)
 
     # GeoNet station visibility state from session
-    show_geonet_visibility = flask.session.get('show_geonet_stations', 'on')
+    show_geonet_visibility = flask.session.get("show_geonet_stations", "on")
 
     with sqlite3.connect(instance_path / constants.database_file_name) as conn:
         vs_to_vs30_correlation_df = pd.read_sql_query(
@@ -102,10 +102,14 @@ def index():
         )
 
     # Determine GeoNet stations data: user-uploaded or default
-    user_geonet_file_path = get_user_geonet_file_path()  # This returns Path object or None
+    user_geonet_file_path = (
+        get_user_geonet_file_path()
+    )  # This returns Path object or None
     default_geonet_file_path = instance_path / "geoNet_stats+2023-06-28.ll"
 
-    if user_geonet_file_path:  # Relies on get_user_geonet_file_path to return valid, existing path or None
+    if (
+        user_geonet_file_path
+    ):  # Relies on get_user_geonet_file_path to return valid, existing path or None
         try:
             flask.current_app.logger.info(
                 f"Attempting to load user-uploaded GeoNet station file: {user_geonet_file_path}"
@@ -229,10 +233,10 @@ def index():
     )
 
     # Determine which GeoNet DataFrame to use for plotting based on session state
-    if show_geonet_visibility == 'on':
+    if show_geonet_visibility == "on":
         plot_geonet_df = geonet_stations_df
     else:
-        plot_geonet_df = pd.DataFrame(columns=['lon', 'lat', 'name'])
+        plot_geonet_df = pd.DataFrame(columns=["lon", "lat", "name"])
 
     geonet_fig = px.scatter_map(
         plot_geonet_df,  # Use plot_geonet_df which might be empty
@@ -249,17 +253,20 @@ def index():
         map.add_trace(trace)
 
     # Determine if any legend items are expected
-    if show_geonet_visibility == 'off':
+    if show_geonet_visibility == "off":
         # GeoNet stations are not visible so we don't expect legend items from them.
         # Add a dummy trace to ensure the legend box (and its title) appears.
-        map.add_trace(go.Scatter(
-            x=[None], y=[None],  # No actual data points
-            mode='markers',
-            marker=dict(color='rgba(0,0,0,0)', size=0),  # Make it invisible
-            showlegend=True,
-            name=' ',  # Use a space as the name to ensure legend item is created
-            hoverinfo='none' # No hover interaction for this dummy point
-        ))
+        map.add_trace(
+            go.Scatter(
+                x=[None],
+                y=[None],  # No actual data points
+                mode="markers",
+                marker=dict(color="rgba(0,0,0,0)", size=0),  # Make it invisible
+                showlegend=True,
+                name=" ",  # Use a space as the name to ensure legend item is created
+                hoverinfo="none",  # No hover interaction for this dummy point
+            )
+        )
 
     map_text = (
         "Click investigation markers for details.<br>"
@@ -317,7 +324,7 @@ def index():
             ("shallowest_depth", "Record's shallowest depth"),
             ("measured_gwl", "Measured groundwater level"),
             (
-                "model_gwl_westerhoff_2019",
+                "model_gwl_westerhoff_2018",
                 "Groundwater level from Westerhoff et al. (2019)",
             ),
         ],
@@ -325,7 +332,7 @@ def index():
             full_html=False,  # Embed only the necessary map HTML
             include_plotlyjs=False,  # Exclude Plotly.js library (assume it's loaded separately)
         ),
-        show_geonet_visibility=show_geonet_visibility, # Pass new session-based variable
+        show_geonet_visibility=show_geonet_visibility,  # Pass new session-based variable
     )
 
 
@@ -387,11 +394,11 @@ def spt_record(record_name: str):
     elif isinstance(measured_gwl, float):
         measured_gwl = f"{measured_gwl:.2f}"
 
-    model_gwl_westerhoff_2019 = vs30s_df["model_gwl_westerhoff_2019"][0]
-    if model_gwl_westerhoff_2019 is None:
-        model_gwl_westerhoff_2019 = "Not available"
-    elif isinstance(model_gwl_westerhoff_2019, float):
-        model_gwl_westerhoff_2019 = f"{model_gwl_westerhoff_2019:.2f}"
+    model_gwl_westerhoff_2018 = vs30s_df["model_gwl_westerhoff_2018"][0]
+    if model_gwl_westerhoff_2018 is None:
+        model_gwl_westerhoff_2018 = "Not available"
+    elif isinstance(model_gwl_westerhoff_2018, float):
+        model_gwl_westerhoff_2018 = f"{model_gwl_westerhoff_2018:.2f}"
 
     model_vs30_foster_2019 = vs30s_df["model_vs30_foster_2019"][0]
     if model_vs30_foster_2019 is None:
@@ -446,7 +453,7 @@ def spt_record(record_name: str):
         measured_gwl=measured_gwl,
         model_vs30_foster_2019=model_vs30_foster_2019,
         model_vs30_stddev_foster_2019=model_vs30_stddev_foster_2019,
-        model_gwl_westerhoff_2019=model_gwl_westerhoff_2019,
+        model_gwl_westerhoff_2018=model_gwl_westerhoff_2018,
         max_depth=spt_measurements_df["Depth (m)"].max(),
         min_depth=spt_measurements_df["Depth (m)"].min(),
         spt_vs30_calculation_used_efficiency=spt_vs30_calculation_used_efficiency,
@@ -504,11 +511,11 @@ def cpt_record(record_name: str):
     elif isinstance(measured_gwl, float):
         measured_gwl = f"{measured_gwl:.2f}"
 
-    model_gwl_westerhoff_2019 = vs30s_df["model_gwl_westerhoff_2019"][0]
-    if model_gwl_westerhoff_2019 is None:
-        model_gwl_westerhoff_2019 = "Not available"
-    elif isinstance(model_gwl_westerhoff_2019, float):
-        model_gwl_westerhoff_2019 = f"{model_gwl_westerhoff_2019:.2f}"
+    model_gwl_westerhoff_2018 = vs30s_df["model_gwl_westerhoff_2018"][0]
+    if model_gwl_westerhoff_2018 is None:
+        model_gwl_westerhoff_2018 = "Not available"
+    elif isinstance(model_gwl_westerhoff_2018, float):
+        model_gwl_westerhoff_2018 = f"{model_gwl_westerhoff_2018:.2f}"
 
     model_vs30_foster_2019 = vs30s_df["model_vs30_foster_2019"][0]
     if model_vs30_foster_2019 is None:
@@ -596,7 +603,7 @@ def cpt_record(record_name: str):
         url_str=url_str,
         tip_net_area_ratio=tip_net_area_ratio,
         measured_gwl=measured_gwl,
-        model_gwl_westerhoff_2019=model_gwl_westerhoff_2019,
+        model_gwl_westerhoff_2018=model_gwl_westerhoff_2018,
         record_name=record_name,
         model_vs30_foster_2019=model_vs30_foster_2019,
         model_vs30_stddev_foster_2019=model_vs30_stddev_foster_2019,
@@ -740,7 +747,7 @@ def query_help():
         "longitude",
         "model_vs30_foster_2019",
         "model_vs30_stddev_foster_2019",
-        "model_gwl_westerhoff_2019",
+        "model_gwl_westerhoff_2018",
         "cpt_tip_net_area_ratio",
         "measured_gwl",
         "deepest_depth",
@@ -789,7 +796,7 @@ def validate():
             "longitude",
             "model_vs30_foster_2019",
             "model_vs30_stddev_foster_2019",
-            "model_gwl_westerhoff_2019",
+            "model_gwl_westerhoff_2018",
             "cpt_tip_net_area_ratio",
             "measured_gwl",
             "deepest_depth",
@@ -859,13 +866,17 @@ def clear_geonet():
 @bp.route("/toggle_geonet_visibility", methods=["POST"])
 def toggle_geonet_visibility():
     """Toggle the visibility state of GeoNet stations in the session."""
-    current_state = flask.session.get('show_geonet_stations', 'on')
-    if current_state == 'on':
-        flask.session['show_geonet_stations'] = 'off'
-        flask.current_app.logger.info("GeoNet stations visibility set to OFF in session.")
+    current_state = flask.session.get("show_geonet_stations", "on")
+    if current_state == "on":
+        flask.session["show_geonet_stations"] = "off"
+        flask.current_app.logger.info(
+            "GeoNet stations visibility set to OFF in session."
+        )
     else:
-        flask.session['show_geonet_stations'] = 'on'
-        flask.current_app.logger.info("GeoNet stations visibility set to ON in session.")
+        flask.session["show_geonet_stations"] = "on"
+        flask.current_app.logger.info(
+            "GeoNet stations visibility set to ON in session."
+        )
     # Preserve query parameters when redirecting
     # This ensures that filters and other states are not lost
     # However, for simplicity and consistency with other POST actions like clear_geonet,

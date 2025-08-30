@@ -19,7 +19,7 @@ RUN chown -R nobody:nobody /usr/var/nzgd_map-instance
 
 # Installs the `nzgd_map` package directly from a GitHub repository without using the pip cache, 
 # ensuring the latest version for container deployment.
-RUN pip install --no-cache-dir "git+https://github.com/ucgmsim/nzgd_map.git@dev#egg=nzgd_map"
+RUN pip install --no-cache-dir "git+https://github.com/ucgmsim/nzgd_map.git@updated_db#egg=nzgd_map"
 
 # Copies the `nzgd.ini` configuration file from the build context into the container’s root directory.
 COPY nzgd.ini /nzgd.ini  

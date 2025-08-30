@@ -7,15 +7,17 @@
 {% block content %}
 <h1> Overview of {{ record_details[0]["record_name"] }} </h1>
 
-    <a href="{{ url_str }}"> Download NZGD source files </a> <br>
-    <a href="{{ url_for('views.download_spt_data', filename=record_details[0]["record_name"] + '_data.csv') }}">Download extracted data</a><br>
-    <a href="{{ url_for('views.download_spt_soil_types', filename=record_details[0]["record_name"] + '_soil_types.csv') }}">Download extracted soil types</a>
+<a href="{{ url_str }}"> Download NZGD source files </a> <br>
+<a href="{{ url_for('views.download_spt_data', filename=record_details[0][" record_name"] + '_data.csv' ) }}">Download
+    extracted data</a><br>
+<a href="{{ url_for('views.download_spt_soil_types', filename=record_details[0][" record_name"] + '_soil_types.csv' )
+    }}">Download extracted soil types</a>
 
-    {{ spt_plot | safe }}
+{{ spt_plot | safe }}
 
 <h3> Investigation Details </h3>
 
-    <table>
+<table>
     <tr>
         <th>Deepest depth (m)</th>
         <th>Shallowest depth (m)</th>
@@ -62,7 +64,7 @@
     </tr>
     <tr>
         <td> {{ measured_gwl }} </td>
-        <td>{{ model_gwl_westerhoff_2019 }}</td>
+        <td>{{ model_gwl_westerhoff_2018 }}</td>
         <td>{{ model_vs30_foster_2019 }}</td>
         <td>{{ model_vs30_stddev_foster_2019 }}</td>
     </tr>
@@ -127,7 +129,7 @@
     </tr>
     {% for row in soil_type %}
     <tr>
-       <td>{{ row['top_depth'] | round(3) }}</td>
+        <td>{{ row['top_depth'] | round(3) }}</td>
         <td>{{ row['layer_thickness'] }}</td>
         <td>{{ row['soil_type'] }}</td>
     </tr>
@@ -135,5 +137,3 @@
 </table>
 
 {% endblock %}
-
-
