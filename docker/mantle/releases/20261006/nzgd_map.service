@@ -1,0 +1,25 @@
+[Unit]
+Description=NZGD Map service
+Wants=network-online.target user@1010.service
+After=network-online.target user@1010.service
+RequiresMountsFor=/mnt/mantle_data/nzgd_map
+# Retry after Docker becomes available, including after a delayed boot.
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+User=nzgd_map
+Group=nzgd_map
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStartPre=/mnt/mantle_data/nzgd_map/releases/20261006/container-service.sh prepare
+ExecStart=/mnt/mantle_data/nzgd_map/releases/20261006/container-service.sh run
+ExecStartPost=/mnt/mantle_data/nzgd_map/releases/20261006/container-service.sh healthy
+ExecStop=-/mnt/mantle_data/nzgd_map/releases/20261006/container-service.sh stop
+ExecStopPost=-/mnt/mantle_data/nzgd_map/releases/20261006/container-service.sh cleanup
+TimeoutStartSec=240
+TimeoutStopSec=60
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=default.target

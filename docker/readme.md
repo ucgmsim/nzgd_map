@@ -4,8 +4,8 @@ The container runs the app with nginx and uWSGI. Both use the same Python 3.12
 runtime, the app is built from this checkout, and the runtime dependencies in
 `requirements.txt` are pinned, with uWSGI 2.0.31 compiled for the image's Python.
 
-**Run the following only on a development workstation.** Server deployment is
-covered by the maintainers' internal runbooks.
+**Run the following only on a development workstation.** Server releases use
+the scripts in [`mantle/`](mantle/README.md).
 
 From the repository root:
 
@@ -60,7 +60,8 @@ bash docker/export-tested-image.sh sha256:IMAGE_ID /absolute/path/image.tar.gz
 
 The script verifies the image ID, writes a gzip-compressed `docker image save`
 archive, tests it, and prints its SHA-256. It does not build, publish, or
-transfer anything.
+transfer anything. [`mantle/README.md`](mantle/README.md) describes how the
+archive is staged and installed on the server.
 
 ## Container configuration
 
