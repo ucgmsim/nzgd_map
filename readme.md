@@ -5,7 +5,59 @@ that enables access to analysis-ready data products derived from data hosted on 
 Database (NZGD)](https://nzgd.org.nz/). This repository also contains files for building a Docker image that can be used to run the
 `nzgd_map` package in a containerized environment.
 
-## Setting up the web app on `Mantle`
+## Local development
+
+The app supports the July 2026 deduplicated CPT/SPT database. See
+[the schema migration notes](docs/schema-migration.md) for schema mappings,
+report and download behaviour, and validation results.
+
+Use Python 3.12 or later. From the repository root:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[test]'
+export NZGD_DATABASE_PATH=/home/arr65/data/nzgd/dev_extracted_cpt_and_scpt_data/uc_nzgd_v0p8p2_20260709_deduped.db
+export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_hex(32))')"
+flask --app nzgd_map:create_app run --host 127.0.0.1
+```
+
+Open <http://127.0.0.1:5000>. The app opens the database in read-only mode; the
+database can remain outside the checkout. Keep the same secret between runs if
+you want to retain browser sessions.
+
+`NZGD_LAST_RETRIEVAL_DATE` and `NZGD_GEONET_STATIONS_PATH` are optional. Without
+them or the corresponding instance files, the app shows an unknown retrieval
+date and allows you to upload a station overlay. Station files contain longitude,
+latitude, and station name, separated by whitespace or commas. Application
+configuration can also be supplied in `instance/config.py`; see the migration
+notes for keys and precedence.
+
+Run the checks with:
+
+```bash
+python -m pytest --cov=nzgd_map --cov-report=term-missing --cov-fail-under=95 tests
+ruff check nzgd_map tests
+ruff format --check nzgd_map tests
+```
+
+The tests create small synthetic databases using the current schema; they do not
+need access to the full NZGD database. The map defaults to all reports with
+measurements. Its availability selector can restrict results to reports with or
+without a valid estimate for the chosen correlations. Each record page preserves
+separate reports, including individual profiles and CSV downloads.
+
+## Deployment notes — review before use
+
+Runbooks for the QuakeCoRE servers are maintained internally. Source changes
+reach the live site only as a new tested image installed through an approved
+service update. The [workstation preview](docker/readme.md) builds and checks
+a candidate image locally.
+
+The setup commands below are historical reference. They predate the current
+database layout and service helper; **use the internal runbook instead**.
+
+## Historical setup of the web app on `Mantle`
 
 ### Creating a user account
 
@@ -105,28 +157,17 @@ Finally, to start the service, and make the web app publicly available
 
 ## Modifying the `nzgd_map` web app
 
-If the the `nzgd_map` web app is modified, a new Docker image that contains the modified
-`nzgd_map` code needs to be built and pushed to Docker Hub. This can be done with any
-machine that has Docker.
+The candidate [Dockerfile](docker/Dockerfile) now builds the code in this checkout
+from the **repository root**, using nginx and uWSGI with one matching Python
+runtime. It no longer installs a moving GitHub branch or accepts a session
+secret at build time. `SECRET_KEY` must be provided when the container starts.
 
-[`Dockerfile`](docker/Dockerfile) contains instructions for building the image of the 
-Docker container.
-One of these instructions installs the latest version of the `nzgd_map` package from
-GitHub. To build the Docker container image, open a terminal and navigate to the 
-`docker` directory in the `nzgd_map` repo 
-  * `cd /location/of/repo/docker/folder`
-
-This Flask app uses a secret key to securely manage the session. The secret key is 
-passed as a build-time argument, to avoid hard coding it in the Dockerfile.  The build 
-process will try to re-use cached `nzgd_map` files by default, so if the `nzgd_map` 
-package has been modified, you should build with the `--no-cache` flag:
- * `docker build --build-arg SECRET_KEY="EXAMPLE" --no-cache -t earthquakesuc/nzgd_map .`
-
- (If you can keep cached files, remove the `--no-cache` flag from the command)
-
-To push the newly built container image to Docker Hub, ensure you are logged in to
-our Docker Hub account (earthquakesuc), and then run
-  * `docker push earthquakesuc/nzgd_map`
+Use the [local container preview instructions](docker/readme.md) to build and
+test the candidate on the development workstation, including a replica of 2p's
+proxy route. The preview prints the image ID and size, mounts the database
+read-only, and exposes only a loopback port. This does not publish an image or
+change Mantle or 2p. Agree the image distribution and server changes separately
+after the preview passes.
 
 ## Files for building a Docker image
 

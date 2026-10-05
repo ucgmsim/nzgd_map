@@ -1,0 +1,11 @@
+"""Production settings; mount as the Flask instance's config.py.
+
+The session secret is supplied at runtime through SECRET_KEY. This file has no
+secrets and must not be used to invent an NZGD retrieval date.
+"""
+
+SESSION_COOKIE_NAME = "nzgd_session"
+SESSION_COOKIE_PATH = "/nzgd"
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"

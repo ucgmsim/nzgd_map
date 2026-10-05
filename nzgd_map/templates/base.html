@@ -9,7 +9,7 @@
     <!-- Load HTMX -->
     <script src="{{ url_for('static', filename='htmx.min.js.gz') }}"></script>
     <!-- Load Plotly -->
-    <script src="{{ url_for('static', filename='plotly.min.js.gz') }}"></script>
+    <script src="{{ url_for('views.plotly_js', version=plotly_version) }}"></script>
 
     <link rel="stylesheet" href="https://unpkg.com/almond.css@latest/dist/almond.lite.min.css" />
     

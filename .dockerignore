@@ -1,0 +1,13 @@
+**
+!pyproject.toml
+!readme.md
+!nzgd_map/
+!nzgd_map/**
+nzgd_map/**/__pycache__/
+nzgd_map/**/*.pyc
+!docker/
+!docker/Dockerfile
+!docker/requirements.txt
+!docker/nginx.conf
+!docker/nzgd.ini
+!docker/start.sh

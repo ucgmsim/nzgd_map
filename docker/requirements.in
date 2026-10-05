@@ -1,0 +1,4 @@
+# Runtime used in the container in addition to pyproject.toml dependencies.
+# Compile uWSGI with the image's Python, instead of loading a distribution
+# plugin built for another Python interpreter.
+uwsgi>=2.0.31

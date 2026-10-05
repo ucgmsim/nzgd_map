@@ -5,18 +5,29 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "nzgd_map"
 authors = [{ name = "QuakeCoRE" }]
-description = "An interactive website for exploring the extracted extracted NZGD data"
-readme = "README.md"
+description = "An interactive website for exploring extracted NZGD data"
+readme = "readme.md"
 requires-python = ">=3.12"
 dynamic = ["version"]
 dependencies = [
-    'flask',
-    'pandas',
-    'plotly',
+    'flask>=3.1',
+    'numpy>=1.26',
+    'pandas>=2.2',
+    'plotly>=5.24',
+    'werkzeug>=3.1',
 ]
 
+[project.optional-dependencies]
+test = ['pytest>=8', 'pytest-cov>=5', 'ruff']
+
 [tool.setuptools.packages]
-find = {}
+find = { include = ["nzgd_map*"] }
+
+[tool.setuptools.package-data]
+nzgd_map = ['templates/*.html', 'templates/views/*.html', 'static/*']
+
+[tool.deptry]
+optional_dependencies_dev_groups = ["test"]
 
 [tool.ruff.lint]
 extend-select = [

@@ -20,24 +20,34 @@
         <ul>
             <li><code>(vs30 < 100) & (region=="Canterbury")</code> - Show records where Vs30 is less than 100 m/s and
                 the region is Canterbury</li>
-            <li><code>type_prefix == "X"</code> - Show records of a particular type. X = "BH", "CPT", or "SCPT". Note
-                that "BH" (borehole) also covers SPT</li>
-            <li><code>investigation_date > "2024-08-20"</code> - Show records with date of investigation later than 20
-                August 2024</li>
+            <li><code>type_prefix == "BH"</code> - Show borehole records. The current database uses CPT and BH; SCPT records are included under CPT.</li>
+            <li><code>record_created_on > "2024-08-20"</code> - Show records created in NZGD after 20 August 2024. This is not the investigation date.</li>
+            <li><code>spt_id == 31</code> - Show one SPT report. Report IDs and NZGD record IDs are distinct.</li>
         </ul>
 
         <h2>Query Syntax</h2>
-        <p>Queries use pandas query syntax. Here are some common operations:</p>
+        <p>Filters support the following pandas-style comparisons and column methods:</p>
         <ul>
             <li>Comparison operators: <code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>,
                 <code>&lt;=</code>, <code>&gt;=</code>
             </li>
             <li>Logical operators: <code>&</code> (and), <code>|</code> (or), <code>~</code> (not)</li>
             <li>String comparison: <code>column == "value"</code> (exact match),
-                <code>column.str.contains("value")</code> (partial match)
+                <code>column.str.contains("value")</code> (literal partial match),
+                <code>column.str.contains("value", case=False)</code> (ignore letter case),
+                <code>column.str.startswith("value")</code> and <code>column.str.endswith("value")</code>
             </li>
             <li>Numerical ranges: <code>(column > lower_bound) & (column < upper_bound)</code></li>
+            <li>Membership: <code>region in ["Canterbury", "Auckland"]</code> or <code>region.isin(["Canterbury", "Auckland"])</code></li>
+            <li>Missing values: <code>extracted_gwl.isna()</code> or <code>extracted_gwl.notna()</code></li>
+            <li>Numeric operations: <code>vs30_log_residual.abs() > 0.5</code>, <code>vs30.between(200, 400)</code>, and arithmetic using <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%</code></li>
         </ul>
+        <p>String matches use literal text, not regular expressions. Other Python expressions and methods are not supported.</p>
+
+        <h2>Vs30 availability and missing values</h2>
+        <p>The “Reports to include” selector applies after your query. “All reports with measurements” keeps reports even when no Vs30 estimate is available for the selected correlations. An available estimate is a finite, positive stored Vs30 value; uncertainty and a model residual are not required.</p>
+        <p>A query such as <code>vs30 > 200</code> still excludes missing Vs30 values. Use <code>vs30_available == False</code> to select unavailable estimates explicitly. Histograms omit unavailable values and show how many reports were excluded.</p>
+        <p>Depths and groundwater levels are in metres; Vs30 values are in metres per second. <code>model_vs30_stddev_foster_2019</code> is in natural-log units. <code>original_reference</code> is an alias for <code>original_investigation_name</code>. Record creation and modification timestamps are not investigation dates.</p>
 
         <h2>Advanced Examples</h2>
         <ul>

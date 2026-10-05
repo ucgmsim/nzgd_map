@@ -306,6 +306,34 @@ form {
     height: 100%;
 }
 
+.record-page {
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.report-section {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 2px solid #dee2e6;
+    scroll-margin-top: 1rem;
+}
+
+.report-navigation {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.table-scroll {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.report-section code {
+    overflow-wrap: anywhere;
+}
+
 .record-count {
     margin: 10px 0 10px 10px;
     font-weight: bold;

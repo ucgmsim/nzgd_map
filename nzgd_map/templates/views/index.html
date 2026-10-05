@@ -1,21 +1,12 @@
 {% extends "base.html" %}
 
-{% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-<script>
-    window.addEventListener('load', function () {
-        MathJax.typeset();
-    });
-</script>
-{% endblock %}
-
 {% block title %} NZGD data {% endblock %}
 
 {% block content %}
 <div class="layout-container">
     <section>
         <h1>CPT and SPT data extracted from NZGD records</h1>
-        <h4>Date of last update from NZGD: {{ date_of_last_nzgd_retrieval }}</h4>
+        <h4>Date of last update from NZGD: {{ date_of_last_nzgd_retrieval or 'Not provided' }}</h4>
         <p><a href="{{ url_for('views.query_help') }}" target="_blank" class="help-link">Need help with queries? Click
                 here
                 for examples and syntax</a></p>
@@ -27,10 +18,17 @@
         <div class="form-column">
             <form id="query-form" method="GET" action="{{url_for('views.index')}}">
                 <!-- Text input for a custom query, passed as the 'query' parameter in the URL -->
-                <input id="query-input" name="query" hx-get="/validate" hx-trigger="keyup delay:300ms changed"
-                    hx-target="#error" placeholder="Input your pandas-compatible search query"
+                <input id="query-input" name="query" hx-get="{{ url_for('views.validate') }}" hx-trigger="keyup delay:300ms changed"
+                    hx-target="#error" placeholder="Filter reports, e.g. deepest_depth > 20"
                     value="{{query or ''}}" />
-                <div id="error"></div>
+                <div id="error" role="alert">{% if error %}{% include 'error.html' %}{% endif %}</div>
+
+    <label for="availability-select">Reports to include</label>
+    <select id="availability-select" name="vs30_availability">
+        {% for value, label in availability_options %}
+        <option value="{{ value }}" {% if value == selected_availability %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
 
     <!-- Dropdown to select a vs30 correlation -->
     <label for="vs30-correlation-select">Select a Vs-Vs30 correlation option</label>
@@ -87,7 +85,9 @@
     </select>
 
                 <!-- Record count display -->
-                <div class="record-count">Retrieved {{ num_records }} records</div>
+                <div class="record-count">Showing {{ num_reports }} reports from {{ num_records }} NZGD records</div>
+                <p>{{ matching_reports }} reports match your query: {{ available_reports }} with a Vs30 estimate for the selected correlations; {{ unavailable_reports }} without.</p>
+                <p>SPT estimates use the Auto hammer option. Each report's detail page lists its estimation assumptions.</p>
 
                 <!-- Submit button to trigger a search -->
                 <button id="query-button">Update selection</button>
@@ -98,14 +98,19 @@
         <div class="histogram-column">
             <div class="histogram-container">
                 {{hist_plot | safe}}
+                <p>Histogram includes {{ histogram_count }} reports; {{ histogram_missing }} have no value for this parameter.</p>
             </div>
         </div>
     </div>
 
     <div class="geonet-upload-section">
+        {% if not geonet_stations_available %}
+        <p>No GeoNet station data loaded. Upload a station file to add the overlay.</p>
+        {% endif %}
         <div class="geonet-form-container">
             <form action="{{ url_for('views.upload_geonet') }}" method="post" enctype="multipart/form-data"
                 id="geonet-upload-form">
+                <input type="hidden" name="return_to" value="{{ return_to }}">
                 <input type="file" name="geonet_file" id="geonet_file_input" accept=".txt,.ll,.csv"
                     style="display: none;" onchange="document.getElementById('geonet-upload-form').submit()">
                 <button type="button" onclick="document.getElementById('geonet_file_input').click()"
@@ -116,18 +121,20 @@
                 <span class="file-status">✓ Custom file loaded</span>
                 <form action="{{ url_for('views.clear_geonet') }}" method="post" id="clear-geonet-form"
                     style="margin-top: 5px;">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
                     <button type="submit" class="clear-btn">Reset to Default File</button>
                 </form>
             </div>
             {% else %}
             <div style="margin-top: 5px;">
-                <span class="file-status">Using default file</span>
+                <span class="file-status">{{ 'Using default file' if geonet_stations_available else 'No default file loaded' }}</span>
             </div>
             {% endif %}
         </div>
 
         <form action="{{ url_for('views.toggle_geonet_visibility') }}" method="post" id="toggle-geonet-form"
             class="geonet-form-container" style="margin-left: 10px;">
+            <input type="hidden" name="return_to" value="{{ return_to }}">
             <button type="submit" id="toggle-geonet-btn" class="toggle-geonet-btn">
                 {{ 'HIDE' if show_geonet_visibility == 'on' else 'SHOW' }} GEONET STATIONS
             </button>
@@ -136,6 +143,8 @@
 
     <!-- Bottom row: Map spanning full width -->
     <div class="map-row">
+        <p>Click a marker to open its report. Marker size follows the absolute Vs30 log residual with Foster (2019), with a minimum visible size when the residual is unavailable. Grey markers have no value for the selected colour parameter.</p>
+        {% if unmapped_reports %}<p>{{ unmapped_reports }} reports have no usable coordinates and cannot be placed on the map.</p>{% endif %}
         <section role="figure" id="map-plot-section">
             {{map | safe}}
             <!-- Render the Plotly map as raw HTML. 'safe' prevents auto-escaping of HTML content -->
@@ -144,24 +153,9 @@
                 var plot_element =
                     mapSection.getElementsByClassName("plotly-graph-div")[0];
                 plot_element.on("plotly_click", function (data) {
-                    {
-                        var point = data.points[0];
-                        if (point) {
-                            // Check if the clicked point belongs to the GeoNet station trace
-                            // This relies on the name given to the trace in views.py
-                            if (point.curveNumber < plot_element.data.length && plot_element.data[point.curveNumber].name === 'GeoNet station') {
-                                // Optionally, handle clicks on GeoNet stations differently or do nothing
-                                console.log("Clicked on a GeoNet station: ", point.hovertext);
-                                return; // Do not open a new window for GeoNet stations
-                            }
-
-                            if (point.hovertext.startsWith("BH")) {
-                                window.open(`{{url_for('views.spt_record', record_name='')}}/${point.hovertext}`, '_blank', 'noopener,noreferrer');
-                            }
-                            if (point.hovertext.startsWith("CPT") || point.hovertext.startsWith("SCPT")) {
-                                window.open(`{{url_for('views.cpt_record', record_name='')}}/${point.hovertext}`, '_blank', 'noopener,noreferrer');
-                            }
-                        }
+                    var point = data.points[0];
+                    if (point && point.customdata && point.customdata[0]) {
+                        window.open(point.customdata[0], '_blank', 'noopener,noreferrer');
                     }
                 });
 

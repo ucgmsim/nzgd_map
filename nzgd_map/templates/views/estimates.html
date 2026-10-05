@@ -1,0 +1,42 @@
+<h3>Vs30 estimates for this report</h3>
+{% if report.estimates %}
+<p>Only stored estimates are listed. Unavailable values are not treated as zero.</p>
+<div class="table-scroll">
+<table>
+    <thead>
+    <tr>
+        <th>Vs30 (m/s)</th>
+        <th>Vs30 uncertainty</th>
+        <th>Vs30 log residual with Foster (2019)</th>
+        <th>{{ kind | upper }} to Vs correlation</th>
+        <th>Vs to Vs30 correlation</th>
+        {% if kind == 'spt' %}
+        <th>Borehole diameter used (mm)</th>
+        <th>Assumed hammer type</th>
+        <th>Used extracted soil types</th>
+        <th>Used extracted efficiency</th>
+        {% endif %}
+    </tr>
+    </thead>
+    <tbody>
+    {% for estimate in report.estimates %}
+    <tr>
+        <td>{{ estimate.vs30 | number }}</td>
+        <td>{{ estimate.vs30_stddev | number }}</td>
+        <td>{{ estimate.vs30_log_residual | number }}</td>
+        <td>{{ estimate[kind + '_to_vs_correlation'] }}</td>
+        <td>{{ estimate.vs_to_vs30_correlation }}</td>
+        {% if kind == 'spt' %}
+        <td>{{ estimate.assumed_borehole_diameter_mm | number }}</td>
+        <td>{{ estimate.hammer_type }}</td>
+        <td>{{ estimate.estimate_used_extracted_layer_soil_types | yes_no }}</td>
+        <td>{{ estimate.estimate_used_extracted_efficiency | yes_no }}</td>
+        {% endif %}
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<p>No Vs30 estimates are stored for this report.</p>
+{% endif %}

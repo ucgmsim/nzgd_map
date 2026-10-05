@@ -1,10 +1,32 @@
-#!/usr/bin/env sh 
-# The above line specifies the script interpreter by using the environment's `sh`. This is the shebang line that tells the system to execute the script with the shell interpreter.
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "Starting nginx"
+: "${SECRET_KEY:?Set SECRET_KEY when starting the container}"
+: "${NZGD_DATABASE_PATH:?Set NZGD_DATABASE_PATH when starting the container}"
+if [[ ! -r "$NZGD_DATABASE_PATH" ]]; then
+    echo "The configured database is not readable: $NZGD_DATABASE_PATH" >&2
+    exit 1
+fi
 
-# Starts the uWSGI server using the configuration file `/nzgd.ini` and runs it in the background (due to the trailing `&`), allowing the script to continue executing subsequent commands.
-uwsgi --ini /nzgd.ini & 
+uwsgi --ini /nzgd.ini &
+app_pid=$!
+nginx -g 'daemon off;' &
+nginx_pid=$!
 
-# Launches Nginx with the directive to run in the foreground (`daemon off;`). Running Nginx in the foreground is particularly useful in container environments to prevent the container from exiting.
-nginx -g "daemon off;" 
+cleanup() {
+    trap - EXIT TERM INT
+    kill -TERM "$app_pid" "$nginx_pid" 2>/dev/null || true
+    wait "$app_pid" "$nginx_pid" 2>/dev/null || true
+}
+trap cleanup EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
+
+# Stop the container if either server exits, so nginx cannot mask a failed app.
+set +e
+wait -n "$app_pid" "$nginx_pid"
+status=$?
+if (( status == 0 )); then
+    status=1
+fi
+exit "$status"

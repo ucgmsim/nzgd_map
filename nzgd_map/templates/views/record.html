@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ record.record_name }} — {{ kind | upper }} reports{% endblock %}
+{% block content %}
+<div class="record-page">
+    <p><a href="{{ url_for('views.index') }}">Back to map</a></p>
+    <h1>{{ record.record_name }}</h1>
+    <p>{{ reports | length }} separate {{ kind | upper }} reports.
+        Measurements, metadata and estimates below belong to the named report.</p>
+    <nav aria-label="Reports in this record" class="report-navigation">
+        {% for report in reports %}
+        <a href="#{{ kind }}-{{ report.report_id }}">{{ kind | upper }} {{ report.report_id }}</a>
+        {% endfor %}
+    </nav>
+    <p><a href="{{ url_for('records.download_cpt_data' if kind == 'cpt' else 'records.download_spt_data', filename=record.record_name + '_data.csv') }}">Download measurements from all reports (CSV with report IDs)</a></p>
+    <h2>NZGD record details</h2>
+    <div class="table-scroll">
+    <table>
+        <tr><th>Original investigation name</th><td colspan="3">{{ record.original_investigation_name or 'Not available' }}</td></tr>
+        <tr><th>Latitude</th><td>{{ record.latitude | number(6) }}</td><th>Longitude</th><td>{{ record.longitude | number(6) }}</td></tr>
+        <tr><th>Record created in NZGD</th><td>{{ record.record_created_on or 'Not available' }}</td><th>Record last modified in NZGD</th><td>{{ record.record_last_modified_on or 'Not available' }}</td></tr>
+        <tr><th>Region</th><td>{{ record.region or 'Not available' }}</td><th>District</th><td>{{ record.district or 'Not available' }}</td></tr>
+        <tr><th>City</th><td>{{ record.city or 'Not available' }}</td><th>Suburb</th><td>{{ record.suburb or 'Not available' }}</td></tr>
+        <tr><th>Foster (2019) Vs30 (m/s)</th><td>{{ record.model_vs30_foster_2019 | number }}</td><th>Foster (2019) standard deviation (ln units)</th><td>{{ record.model_vs30_stddev_foster_2019 | number }}</td></tr>
+        <tr><th>Westerhoff (2018) groundwater level (m)</th><td colspan="3">{{ record.model_gwl_westerhoff_2018 | number }}</td></tr>
+    </table>
+    </div>
+    <p>The NZGD record timestamps above are not investigation dates.</p>
+    {% for report in reports %}
+    <section id="{{ kind }}-{{ report.report_id }}" class="report-section">
+        <h2>{{ kind | upper }} report {{ report.report_id }}</h2>
+        <p>Source: <code>{{ report.source_file or 'Not available' }}</code></p>
+        {% block report_content scoped %}{% endblock %}
+        {% include "views/estimates.html" %}
+    </section>
+    {% endfor %}
+</div>
+{% endblock %}
